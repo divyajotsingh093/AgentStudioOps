@@ -3,7 +3,13 @@ import {
   agents, type Agent, type InsertAgent, type UpdateAgent,
   runs, type Run, type InsertRun,
   governanceIssues, type GovernanceIssue, type InsertGovernanceIssue,
+  agentComponents, type AgentComponent, type InsertAgentComponent, type UpdateAgentComponent,
+  dataSources, type DataSource, type InsertDataSource, type UpdateDataSource,
+  dataConnectors, type DataConnector, type InsertDataConnector, type UpdateDataConnector,
+  dataPermissions, type DataPermission, type InsertDataPermission,
 } from "@shared/schema";
+import { db } from './db';
+import { eq } from 'drizzle-orm';
 
 // modify the interface with any CRUD methods
 // you might need
@@ -20,6 +26,13 @@ export interface IStorage {
   createAgent(agent: InsertAgent): Promise<Agent>;
   updateAgent(id: string, agent: UpdateAgent): Promise<Agent | undefined>;
   
+  // Agent Component methods - for enhanced builder
+  getAgentComponents(agentId: string): Promise<AgentComponent[]>;
+  getAgentComponentById(id: number): Promise<AgentComponent | undefined>;
+  createAgentComponent(component: InsertAgentComponent): Promise<AgentComponent>;
+  updateAgentComponent(id: number, component: UpdateAgentComponent): Promise<AgentComponent | undefined>;
+  deleteAgentComponent(id: number): Promise<boolean>;
+  
   // Run methods
   getRuns(): Promise<Run[]>;
   getRunById(id: string): Promise<Run | undefined>;
@@ -30,23 +43,56 @@ export interface IStorage {
   getGovernanceIssues(): Promise<GovernanceIssue[]>;
   createGovernanceIssue(issue: InsertGovernanceIssue): Promise<GovernanceIssue>;
   updateGovernanceIssue(id: string, status: string, notes?: string): Promise<GovernanceIssue | undefined>;
+  
+  // Data Fabric methods
+  getDataSources(): Promise<DataSource[]>;
+  getDataSourceById(id: number): Promise<DataSource | undefined>;
+  createDataSource(source: InsertDataSource): Promise<DataSource>;
+  updateDataSource(id: number, source: UpdateDataSource): Promise<DataSource | undefined>;
+  deleteDataSource(id: number): Promise<boolean>;
+  
+  getDataConnectors(): Promise<DataConnector[]>;
+  getDataConnectorById(id: number): Promise<DataConnector | undefined>;
+  createDataConnector(connector: InsertDataConnector): Promise<DataConnector>;
+  updateDataConnector(id: number, connector: UpdateDataConnector): Promise<DataConnector | undefined>;
+  deleteDataConnector(id: number): Promise<boolean>;
+  
+  getDataPermissions(dataSourceId: number): Promise<DataPermission[]>;
+  createDataPermission(permission: InsertDataPermission): Promise<DataPermission>;
+  deleteDataPermission(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private agents: Map<string, Agent>;
+  private agentComponents: Map<number, AgentComponent>;
   private runs: Map<string, Run>;
   private governanceIssues: Map<string, GovernanceIssue>;
+  private dataSources: Map<number, DataSource>;
+  private dataConnectors: Map<number, DataConnector>;
+  private dataPermissions: Map<number, DataPermission>;
   private currentUserId: number;
   private currentIssueId: number;
+  private currentComponentId: number;
+  private currentDataSourceId: number;
+  private currentDataConnectorId: number;
+  private currentDataPermissionId: number;
 
   constructor() {
     this.users = new Map();
     this.agents = new Map();
+    this.agentComponents = new Map();
     this.runs = new Map();
     this.governanceIssues = new Map();
+    this.dataSources = new Map();
+    this.dataConnectors = new Map();
+    this.dataPermissions = new Map();
     this.currentUserId = 1;
     this.currentIssueId = 1;
+    this.currentComponentId = 1;
+    this.currentDataSourceId = 1;
+    this.currentDataConnectorId = 1;
+    this.currentDataPermissionId = 1;
     
     // Initialize with mock data
     this.initializeMockData();
@@ -65,7 +111,15 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id, 
+      role: "user", 
+      createdAt: new Date(), 
+      email: insertUser.email || null,
+      fullName: insertUser.fullName || null,
+      organization: insertUser.organization || null
+    };
     this.users.set(id, user);
     return user;
   }
@@ -91,6 +145,47 @@ export class MemStorage implements IStorage {
     const updatedAgent = { ...existingAgent, ...agent };
     this.agents.set(id, updatedAgent);
     return updatedAgent;
+  }
+  
+  // Agent Component methods - for enhanced builder
+  async getAgentComponents(agentId: string): Promise<AgentComponent[]> {
+    return Array.from(this.agentComponents.values()).filter(
+      component => component.agentId === agentId
+    );
+  }
+  
+  async getAgentComponentById(id: number): Promise<AgentComponent | undefined> {
+    return this.agentComponents.get(id);
+  }
+  
+  async createAgentComponent(component: InsertAgentComponent): Promise<AgentComponent> {
+    const id = this.currentComponentId++;
+    const newComponent: AgentComponent = { 
+      ...component, 
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      configuration: component.configuration || {}
+    };
+    this.agentComponents.set(id, newComponent);
+    return newComponent;
+  }
+  
+  async updateAgentComponent(id: number, component: UpdateAgentComponent): Promise<AgentComponent | undefined> {
+    const existingComponent = this.agentComponents.get(id);
+    if (!existingComponent) return undefined;
+    
+    const updatedComponent = { 
+      ...existingComponent, 
+      ...component,
+      updatedAt: new Date()
+    };
+    this.agentComponents.set(id, updatedComponent);
+    return updatedComponent;
+  }
+  
+  async deleteAgentComponent(id: number): Promise<boolean> {
+    return this.agentComponents.delete(id);
   }
   
   // Run methods

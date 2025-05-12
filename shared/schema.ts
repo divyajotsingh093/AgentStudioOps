@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -7,11 +7,19 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  role: text("role").default("user"),
+  email: text("email").unique(),
+  fullName: text("full_name"),
+  organization: text("organization"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  email: true,
+  fullName: true,
+  organization: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -30,13 +38,37 @@ export const agents = pgTable("agents", {
   status: text("status").notNull(),
   createdBy: text("created_by").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  capabilities: json("capabilities").default({}),
+  configuration: json("configuration").default({}),
+  version: text("version").default("1.0.0"),
+  isPublic: boolean("is_public").default(false),
+});
+
+// Agent components for the enhanced builder
+export const agentComponents = pgTable("agent_components", {
+  id: serial("id").primaryKey(),
+  agentId: text("agent_id").notNull().references(() => agents.id),
+  type: text("type").notNull(), // prompt, tool, context, policy
+  name: text("name").notNull(),
+  description: text("description"),
+  content: text("content"),
+  configuration: json("configuration").default({}),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertAgentSchema = createInsertSchema(agents);
 export const updateAgentSchema = createSelectSchema(agents);
+export const insertAgentComponentSchema = createInsertSchema(agentComponents);
+export const updateAgentComponentSchema = createSelectSchema(agentComponents);
+
 export type Agent = typeof agents.$inferSelect;
 export type InsertAgent = z.infer<typeof insertAgentSchema>;
 export type UpdateAgent = z.infer<typeof updateAgentSchema>;
+export type AgentComponent = typeof agentComponents.$inferSelect;
+export type InsertAgentComponent = z.infer<typeof insertAgentComponentSchema>;
+export type UpdateAgentComponent = z.infer<typeof updateAgentComponentSchema>;
 
 // Run status types
 export const runStatusEnum = z.enum(['Success', 'Failed', 'Needs Approval', 'In Progress']);
@@ -100,3 +132,58 @@ export const issueSchema = z.object({
 export const governanceIssueSchema = createInsertSchema(governanceIssues);
 export type GovernanceIssue = typeof governanceIssues.$inferSelect;
 export type InsertGovernanceIssue = z.infer<typeof governanceIssueSchema>;
+
+// Data Fabric schemas
+export const dataSourceTypeEnum = z.enum(['API', 'Database', 'File', 'Stream', 'Custom']);
+export const dataPermissionEnum = z.enum(['Read', 'Write', 'Admin']);
+
+export const dataSources = pgTable("data_sources", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  description: text("description"),
+  connectionConfig: json("connection_config").notNull(),
+  schema: json("schema").default({}),
+  status: text("status").default("Active"),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const dataConnectors = pgTable("data_connectors", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  sourceId: integer("source_id").references(() => dataSources.id),
+  targetId: integer("target_id").references(() => dataSources.id),
+  transformations: json("transformations").default([]),
+  schedule: text("schedule"),
+  lastSyncedAt: timestamp("last_synced_at"),
+  status: text("status").default("Active"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const dataPermissions = pgTable("data_permissions", {
+  id: serial("id").primaryKey(),
+  dataSourceId: integer("data_source_id").references(() => dataSources.id),
+  userId: integer("user_id").references(() => users.id),
+  agentId: text("agent_id").references(() => agents.id),
+  permissionType: text("permission_type").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertDataSourceSchema = createInsertSchema(dataSources);
+export const updateDataSourceSchema = createSelectSchema(dataSources);
+export const insertDataConnectorSchema = createInsertSchema(dataConnectors);
+export const updateDataConnectorSchema = createSelectSchema(dataConnectors);
+export const insertDataPermissionSchema = createInsertSchema(dataPermissions);
+
+export type DataSource = typeof dataSources.$inferSelect;
+export type InsertDataSource = z.infer<typeof insertDataSourceSchema>;
+export type UpdateDataSource = z.infer<typeof updateDataSourceSchema>;
+export type DataConnector = typeof dataConnectors.$inferSelect;
+export type InsertDataConnector = z.infer<typeof insertDataConnectorSchema>;
+export type UpdateDataConnector = z.infer<typeof updateDataConnectorSchema>;
+export type DataPermission = typeof dataPermissions.$inferSelect;
+export type InsertDataPermission = z.infer<typeof insertDataPermissionSchema>;
