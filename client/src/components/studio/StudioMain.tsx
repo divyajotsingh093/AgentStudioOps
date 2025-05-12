@@ -1,0 +1,77 @@
+import { useState } from "react";
+import { ChatMessage, ReasoningTrace, PromptItem } from "@/lib/types";
+import ChatTest from "./ChatTest";
+import FlowView from "./FlowView";
+import PromptEditor from "./PromptEditor";
+
+interface StudioMainProps {
+  chatMessages: ChatMessage[];
+  reasoningTraces: ReasoningTrace[];
+  onSendMessage: (message: string) => void;
+  selectedPrompt: PromptItem | null;
+  onSavePrompt: (prompt: PromptItem) => void;
+  onClosePromptEditor: () => void;
+}
+
+const StudioMain = ({
+  chatMessages,
+  reasoningTraces,
+  onSendMessage,
+  selectedPrompt,
+  onSavePrompt,
+  onClosePromptEditor
+}: StudioMainProps) => {
+  const [activeView, setActiveView] = useState<'chat' | 'flow'>('chat');
+  
+  return (
+    <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
+      {/* Canvas Mode Selector */}
+      <div className="bg-white border-b border-gray-200 p-2 flex">
+        <button 
+          className={`px-3 py-1 rounded-md text-sm font-medium mr-2 ${
+            activeView === 'chat' 
+              ? 'bg-primary text-white' 
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+          onClick={() => setActiveView('chat')}
+        >
+          Chat Test
+        </button>
+        <button 
+          className={`px-3 py-1 rounded-md text-sm font-medium ${
+            activeView === 'flow' 
+              ? 'bg-primary text-white' 
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+          onClick={() => setActiveView('flow')}
+        >
+          Flow View
+        </button>
+      </div>
+      
+      {/* Content Area */}
+      <div className="flex-1 flex overflow-hidden">
+        {activeView === 'chat' ? (
+          <ChatTest 
+            messages={chatMessages}
+            reasoningTraces={reasoningTraces}
+            onSendMessage={onSendMessage}
+          />
+        ) : (
+          <FlowView />
+        )}
+        
+        {/* Right Panel - Prompt Editor */}
+        {selectedPrompt && (
+          <PromptEditor
+            prompt={selectedPrompt}
+            onSave={onSavePrompt}
+            onCancel={onClosePromptEditor}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default StudioMain;

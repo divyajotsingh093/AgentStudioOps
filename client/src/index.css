@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 246 84% 59%; /* Indigo 600 #4F46E5 */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 350 79% 59%; /* Rose 500 #F43F5E */
+    --destructive-foreground: 210 40% 98%;
+    --success: 100 72% 44%; /* Lime 500 #84CC16 */
+    --success-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 246 84% 59%;
+    --text: 222 17% 28%; /* Slate 700 #334155 */
+    --radius: 0.75rem; /* rounded-xl */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 246 84% 59%; /* Indigo 600 #4F46E5 */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 350 79% 59%; /* Rose 500 #F43F5E */
+    --destructive-foreground: 210 40% 98%;
+    --success: 100 72% 44%; /* Lime 500 #84CC16 */
+    --success-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 246 84% 59%;
+    --text: 215 20.2% 65.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* Use Inter font throughout the application */
+  html {
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  /* Card hover effects */
+  .card-hover {
+    @apply transition duration-300 ease-in-out;
+  }
+  
+  .card-hover:hover {
+    @apply transform scale-[1.03];
+  }
+
+  .agent-card {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .agent-card:hover {
+    @apply transform -translate-y-0.5 shadow-lg;
+  }
+
+  /* Drawer animation */
+  .drawer-slide {
+    @apply transition-transform duration-300 ease-in-out;
+  }
+
+  .drawer-slide.closed {
+    @apply translate-x-full;
+  }
+
+  /* Studio tabs */
+  .studio-tab {
+    @apply px-4 py-2 font-medium border-b-2 border-transparent hover:text-primary transition-colors;
+  }
+
+  .studio-tab.active {
+    @apply border-primary text-primary;
+  }
+
+  /* Chat bubbles */
+  .chat-bubble {
+    @apply p-3 rounded-xl max-w-[80%] mb-4;
+  }
+
+  .chat-bubble.user {
+    @apply bg-gray-100 ml-auto;
+  }
+
+  .chat-bubble.agent {
+    @apply bg-primary/10 mr-auto;
+  }
+
+  /* Timeline styles */
+  .timeline-item {
+    @apply relative pl-6;
+  }
+
+  .timeline-item::before {
+    content: '';
+    @apply absolute left-0 top-2 h-3 w-3 rounded-full bg-primary;
+  }
+
+  .timeline-item::after {
+    content: '';
+    @apply absolute left-[0.3rem] top-5 bottom-0 w-0.5 bg-gray-200;
+  }
+
+  .timeline-item:last-child::after {
+    @apply hidden;
+  }
+}
