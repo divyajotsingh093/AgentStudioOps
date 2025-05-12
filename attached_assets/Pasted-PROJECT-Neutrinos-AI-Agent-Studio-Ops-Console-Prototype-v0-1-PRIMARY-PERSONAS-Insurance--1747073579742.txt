@@ -1,0 +1,72 @@
+PROJECT ▸  “Neutrinos AI-Agent Studio & Ops Console – Prototype v0.1”
+
+PRIMARY PERSONAS
+• Insurance Solution Engineer  (builder)
+• Underwriter / Claims SME     (approver & power user)
+• AI-Ops Engineer              (monitoring)
+
+CORE USER JOURNEY
+1️⃣  **Build** – Designer opens Agent Studio, adds context & tools, writes prompt.  
+2️⃣  **Test**  – Runs live chat, inspects reasoning trace, tweaks.  
+3️⃣  **Deploy** – Publishes agent → appears in Catalog & API; selects Dev or Prod env.  
+4️⃣  **Monitor** – Views Run Dashboard, drill-downs, guardrail hits; approves or rolls back.
+
+SCREEN LIST & WIREFRAMES
+• **S-1  Agents Landing**  
+    – Hero search bar + card grid (10 mock agents)  
+    – Filter chips (*Claims, UW, Service, Fraud*)  
+• **S-2  Agent Studio** *(tabs: Build · Test · Deploy · Versions · Governance)*  
+    – Left rail ➝ *Context, Tools, Prompt, Policies*  
+    – Center canvas dual-mode:  
+         • *Chat Test* (left chat, right reasoning JSON)  
+         • *Flow View* (React-Flow DAG)  
+    – Right drawer (node inspector / prompt editor)  
+• **S-3  Deploy Modal**  
+    – Radio Dev/Prod, version notes textarea, “Publish” CTA  
+• **S-4  Catalog / API Endpoint page**  
+    – cURL snippet, OpenAPI link, usage stats  
+• **S-5  Threads Chat**  
+    – Chat bubbles, citations pop-over, file-drop zone  
+• **S-6  Run Dashboard**  
+    – KPI cards (Success %, Latency p95, Token $)  
+    – Table: Run-ID · Agent · Status · Cost · View ↗  
+• **S-7  Run Detail**  
+    – Vertical step timeline (Prompt → Tool → Rule → Response)  
+    – Tabs: Input · Output · Tokens · Latency  
+    – “Replay with latest” button  
+• **S-8  Governance Log & Approvals**  
+    – Filter chips (Policy Violation, Pending Approval)  
+    – Side drawer with full conversation & Approve / Reject buttons  
+
+INTERACTION HOTSPOTS
+✓ Card → Studio → Test Chat → Publish → Run Dashboard auto-refresh → Drill into run → Governance flag → Approve.
+
+VISUAL & BRAND
+• Palette:  
+    – Indigo 600 #4F46E5  (primary)  
+    – Slate 700 #334155   (text)  
+    – Lime 500 #84CC16    (success)  
+    – Rose 500 #F43F5E    (error)  
+• Inter font, 8-pt spacing grid, rounded-xl cards, soft shadows.  
+• Drawer slides 300 ms, card hover lift 3 %.  
+• Lucide icons (bot, flow, shield, database, edit-3).  
+
+MOCK DATA
+```json
+{
+  "agents":[
+    {"id":"accel-uw","name":"Accelerated UW Agent","type":["UW"],"status":"Running"},
+    {"id":"claims-fast","name":"Auto Claims Fast-Track","type":["Claims"]}
+  ],
+  "runSample":{
+    "id":"run-9Y12",
+    "steps":[
+      {"type":"Prompt","tokens_in":120,"tokens_out":0,"latency":300},
+      {"type":"Tool","name":"IDP.extract","latency":800},
+      {"type":"Tool","name":"rules.evaluate","latency":120},
+      {"type":"Prompt","tokens_in":60,"tokens_out":30,"latency":200}
+    ],
+    "cost":0.0042,
+    "status":"success"
+  }
+}
