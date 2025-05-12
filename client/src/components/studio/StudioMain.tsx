@@ -3,6 +3,7 @@ import { ChatMessage, ReasoningTrace, PromptItem } from "@/lib/types";
 import ChatTest from "./ChatTest";
 import FlowView from "./FlowView";
 import PromptEditor from "./PromptEditor";
+import AgentActionChat from "../agents/chat/AgentActionChat";
 
 interface StudioMainProps {
   chatMessages: ChatMessage[];
@@ -11,6 +12,7 @@ interface StudioMainProps {
   selectedPrompt: PromptItem | null;
   onSavePrompt: (prompt: PromptItem) => void;
   onClosePromptEditor: () => void;
+  agentName?: string;
 }
 
 const StudioMain = ({
@@ -19,14 +21,25 @@ const StudioMain = ({
   onSendMessage,
   selectedPrompt,
   onSavePrompt,
-  onClosePromptEditor
+  onClosePromptEditor,
+  agentName = "Accelerated UW Agent"
 }: StudioMainProps) => {
-  const [activeView, setActiveView] = useState<'chat' | 'flow'>('chat');
+  const [activeView, setActiveView] = useState<'chat' | 'flow' | 'actions'>('actions');
   
   return (
     <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
       {/* Canvas Mode Selector */}
       <div className="bg-white border-b border-gray-200 p-2 flex">
+        <button 
+          className={`px-3 py-1 rounded-md text-sm font-medium mr-2 ${
+            activeView === 'actions' 
+              ? 'bg-primary text-white' 
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+          onClick={() => setActiveView('actions')}
+        >
+          Agent Actions
+        </button>
         <button 
           className={`px-3 py-1 rounded-md text-sm font-medium mr-2 ${
             activeView === 'chat' 
@@ -51,7 +64,14 @@ const StudioMain = ({
       
       {/* Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        {activeView === 'chat' ? (
+        {activeView === 'actions' ? (
+          <AgentActionChat
+            agentName={agentName}
+            messages={chatMessages}
+            reasoningTraces={reasoningTraces}
+            onSendMessage={onSendMessage}
+          />
+        ) : activeView === 'chat' ? (
           <ChatTest 
             messages={chatMessages}
             reasoningTraces={reasoningTraces}

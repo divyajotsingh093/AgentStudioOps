@@ -126,6 +126,7 @@ const AgentStudio = () => {
               selectedPrompt={selectedPrompt}
               onSavePrompt={handleSavePrompt}
               onClosePromptEditor={() => setSelectedPrompt(null)}
+              agentName={agent.name}
             />
           </>
         )}

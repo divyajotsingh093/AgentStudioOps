@@ -193,8 +193,34 @@ export const chatMessages: ChatMessage[] = [
   {
     id: 'msg-5',
     role: 'agent',
+    content: "Let me search for any existing customer records in our system."
+  },
+  {
+    id: 'msg-6',
+    role: 'agent',
+    tool: 'Data Fabric Query',
+    content: "I've found the customer's previous policy records in our database. The applicant has two existing policies - one term life policy that's active and one whole life policy application that's currently pending."
+  },
+  {
+    id: 'msg-7',
+    role: 'agent',
+    content: "Now I'll run a health assessment based on the information provided."
+  },
+  {
+    id: 'msg-8',
+    role: 'agent',
     tool: 'Rules Engine',
     content: "Based on the information provided, I've evaluated this application against our underwriting guidelines:\n\n- BP readings (140/90) indicate controlled hypertension\n- Single medication at standard dosage\n- No other health complications\n- Coverage amount within standard limits\n\nRecommendation: Standard Plus rating\n\nThis application can proceed to the next underwriting stage. Would you like me to create the initial assessment report?"
+  },
+  {
+    id: 'msg-9',
+    role: 'user',
+    content: "Yes, please create the assessment report and prepare it for underwriter review."
+  },
+  {
+    id: 'msg-10',
+    role: 'agent',
+    content: "I'll generate that report for you now."
   }
 ];
 
