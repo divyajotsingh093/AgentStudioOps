@@ -1,0 +1,112 @@
+PARENT PROTOTYPE
+• Builds on “Neutrinos AI-Agent Studio & Ops Console – Prototype v0.1”.
+• Keep previous nav & theme; insert new Agent-View screens after user lands on
+  /agents/{id}. Use same Indigo/Lime palette, Inter font, 8-pt grid.
+
+PRIMARY PERSONAS
+• Insurance Solution Engineer (builder & debugger)
+• Underwriter / Claims SME (approver & reviewer)
+• AI-Ops Engineer (monitor & optimiser)
+• Compliance Officer (auditor)
+
+NEW CORE JOURNEY
+1. Open **Agent View** from card (running agent).  
+2. Inspect **Live Metrics** → spot token-spike.  
+3. Dive into **Eval & QA** → review auto-eval failures, replay one.  
+4. Open **Policy Insights** → confirm PHI mask rule triggered.  
+5. Check **Version Diff** → compare prompt & tool set v1.2 vs v1.1.  
+6. Explore **Data Lineage** graph → see which Data-Fabric objects fed last run.  
+7. Adjust token cap in **Settings** → Publish v1.3 → verify drop in token cost.
+
+SCREEN LIST (NEW OR EXPANDED)
+
+• **V-1  Agent Overview  (revamped)**
+  – KPI Strip (24 h Success %, p95 Latency, Token $, Cost $)
+  – Live mini-charts (sparkline hover shows exact values)
+  – Status pill (Running / Paused) & Env toggle (Dev | Prod)
+  – “Open Metrics ↗” CTA
+
+• **V-2  Metrics**
+  – Tabs: *Usage · Latency · Errors · Cost*
+  – Line chart (tokens/min) + area chart (cost/day)
+  – Drill: click point → Run-Detail drawer
+  – Filter: last 1 h · 24 h · 7 d
+
+• **V-3  Eval & QA**
+  – Left: Auto-Eval cards (Answer Relevance %, Guardrail pass %, Toxicity score)
+  – Right: Failure table (Run-ID, Check, Score, “Replay”)
+  – “Ask SME to rate 5 random runs” button → creates Governance task
+
+• **V-4  Policy Insights**
+  – Summary chips: *PII Mask ON*, *Max $2 k Payout*, *Tools Allow-List (5)*
+  – Violations timeline (red icons where policy triggered)
+  – “Download Policy JSON” link
+
+• **V-5  Version & Diff**
+  – Left sidebar list of versions
+  – Center diff viewer (side-by-side) for `agent.json`
+  – Toggle sections: Prompt · Tools · Policies
+  – CTA: “Promote v1.3 to Prod”, “Rollback to v1.1”
+
+• **V-6  Data Lineage**
+  – Force-directed graph: nodes = Data-Fabric objects, edges = tool calls
+  – Hover node → shows sample row, ACL info
+  – “Export as PNG” button
+
+• **V-7  Tool Telemetry**
+  – Table: Tool · Calls · Avg Latency · Errors · Last Error Msg
+  – Click tool row → drawer with latency histogram, last 5 payloads
+
+• **V-8  Settings  (expanded)**
+  – Accordion:
+        ① General     (Name, Owner, Tags)
+        ② Prompt / Model (temp, top-p, seed)
+        ③ Tools        (check-box list, drag order)
+        ④ Runtime Caps (token cap, loop cap, cost cap)  ← **NEW**
+        ⑤ Guardrails   (PII mask regex, toxicity threshold)
+        ⑥ Notifications (Slack webhook, Email)
+  – Sticky bottom bar: “Save Draft” · “Publish”
+
+INTERACTION HOTSPOTS
+✓ Hover KPI → sparkline popover  
+✓ Click “Errors 20” card → filter Metrics to error runs  
+✓ Click Run-ID in Eval table → opens Run-Detail overlay  
+✓ Click “Policy violation” icon → highlights offending step in Run-Detail  
+✓ Diff viewer: green/red highlights; scroll sync  
+✓ Data Lineage node drag, zoom wheel  
+✓ Settings > Runtime Caps → change token cap; confirmation toast  
+✓ Publish → toast, auto-redirect to Overview; KPI reload with lower cost
+
+VISUAL & MOTION
+• Gradient badge on KPIs (Indigo→Lime for good, Indigo→Rose for bad)  
+• Drawer slides 250 ms ease-out; charts fade-in 200 ms  
+• Data-Lineage graph uses D3 with spring animation on node drag
+
+MOCK DATA (EXTEND PREV)
+```json
+{
+  "metrics": {
+    "success": 0.94,
+    "latency_p95": 3.2,
+    "tokens_24h": 145000,
+    "cost_24h": 12.37
+  },
+  "eval": {
+    "auto": {"relevance": 0.91, "guardrail": 0.97, "toxicity": 1.0},
+    "failures": [
+      {"run":"run-9Y55","check":"Relevance","score":0.45},
+      {"run":"run-9Y57","check":"Guardrail","score":0.60}
+    ]
+  },
+  "policy": {
+    "pii_mask": true,
+    "max_payout": 2000,
+    "tools": ["data_fabric.query","workflow.trigger","rules.evaluate","idp.extract","case.update"],
+    "violations":[{"run":"run-9Y57","rule":"PII mask"}]
+  },
+  "versions":[
+    {"v":"1.3-draft","date":"2025-05-18"},
+    {"v":"1.2","date":"2025-05-15","prod":true},
+    {"v":"1.1","date":"2025-05-09"}
+  ]
+}

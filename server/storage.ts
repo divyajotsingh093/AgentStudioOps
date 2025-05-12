@@ -566,7 +566,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(agentComponents)
       .where(eq(agentComponents.id, id));
-    return result.length > 0;
+    return !!result;
   }
   
   // Run methods
@@ -647,7 +647,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(dataSources)
       .where(eq(dataSources.id, id));
-    return result.length > 0;
+    return !!result;
   }
   
   async getDataConnectors(): Promise<DataConnector[]> {
@@ -680,7 +680,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(dataConnectors)
       .where(eq(dataConnectors.id, id));
-    return result.length > 0;
+    return !!result;
   }
   
   async getDataPermissions(dataSourceId: number): Promise<DataPermission[]> {
@@ -702,7 +702,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(dataPermissions)
       .where(eq(dataPermissions.id, id));
-    return result.length > 0;
+    return !!result;
   }
 }
 
