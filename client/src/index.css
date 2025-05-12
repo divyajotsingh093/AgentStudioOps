@@ -10,7 +10,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 246 84% 59%; /* Indigo 600 #4F46E5 */
+    --primary: 217 100% 50%; /* Neutrinos Brand Blue #0066FF */
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -24,7 +24,7 @@
     --success-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 246 84% 59%;
+    --ring: 217 100% 50%;
     --text: 222 17% 28%; /* Slate 700 #334155 */
     --radius: 0.75rem; /* rounded-xl */
   }

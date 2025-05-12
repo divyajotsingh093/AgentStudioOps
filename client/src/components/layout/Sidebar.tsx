@@ -22,17 +22,17 @@ const SidebarItem = ({ href, icon: Icon, label, active }: SidebarItemProps) => {
   return (
     <li className="mb-1">
       <Link href={href}>
-        <a
+        <div
           className={cn(
             "flex items-center p-2 rounded-lg font-medium transition-colors",
             active
-              ? "text-primary bg-indigo-50"
+              ? "text-blue-600 bg-blue-50"
               : "text-slate-700 hover:bg-gray-100"
           )}
         >
           <Icon className="h-5 w-5 mr-3" />
           <span className="hidden md:block">{label}</span>
-        </a>
+        </div>
       </Link>
     </li>
   );
