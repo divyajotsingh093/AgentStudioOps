@@ -165,7 +165,9 @@ export class MemStorage implements IStorage {
       id,
       createdAt: new Date(),
       updatedAt: new Date(),
-      configuration: component.configuration || {}
+      configuration: component.configuration || {},
+      description: component.description || null,
+      content: component.content || null
     };
     this.agentComponents.set(id, newComponent);
     return newComponent;
@@ -235,6 +237,118 @@ export class MemStorage implements IStorage {
     
     this.governanceIssues.set(id, updatedIssue);
     return updatedIssue;
+  }
+  
+  // Data Fabric methods
+  async getDataSources(): Promise<DataSource[]> {
+    return Array.from(this.dataSources.values());
+  }
+  
+  async getDataSourceById(id: number): Promise<DataSource | undefined> {
+    return this.dataSources.get(id);
+  }
+  
+  async createDataSource(source: InsertDataSource): Promise<DataSource> {
+    const id = this.currentDataSourceId++;
+    const newSource: DataSource = {
+      ...source,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      schema: source.schema || {},
+      status: source.status || "Active",
+      description: source.description || null,
+      createdBy: source.createdBy || null
+    };
+    this.dataSources.set(id, newSource);
+    return newSource;
+  }
+  
+  async updateDataSource(id: number, source: UpdateDataSource): Promise<DataSource | undefined> {
+    const existingSource = this.dataSources.get(id);
+    if (!existingSource) return undefined;
+    
+    const updatedSource = {
+      ...existingSource,
+      ...source,
+      updatedAt: new Date()
+    };
+    
+    this.dataSources.set(id, updatedSource);
+    return updatedSource;
+  }
+  
+  async deleteDataSource(id: number): Promise<boolean> {
+    return this.dataSources.delete(id);
+  }
+  
+  async getDataConnectors(): Promise<DataConnector[]> {
+    return Array.from(this.dataConnectors.values());
+  }
+  
+  async getDataConnectorById(id: number): Promise<DataConnector | undefined> {
+    return this.dataConnectors.get(id);
+  }
+  
+  async createDataConnector(connector: InsertDataConnector): Promise<DataConnector> {
+    const id = this.currentDataConnectorId++;
+    const newConnector: DataConnector = {
+      ...connector,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      transformations: connector.transformations || [],
+      status: connector.status || "Active",
+      description: connector.description || null,
+      sourceId: connector.sourceId || null,
+      targetId: connector.targetId || null,
+      schedule: connector.schedule || null,
+      lastSyncedAt: connector.lastSyncedAt || null
+    };
+    this.dataConnectors.set(id, newConnector);
+    return newConnector;
+  }
+  
+  async updateDataConnector(id: number, connector: UpdateDataConnector): Promise<DataConnector | undefined> {
+    const existingConnector = this.dataConnectors.get(id);
+    if (!existingConnector) return undefined;
+    
+    const updatedConnector = {
+      ...existingConnector,
+      ...connector,
+      updatedAt: new Date()
+    };
+    
+    this.dataConnectors.set(id, updatedConnector);
+    return updatedConnector;
+  }
+  
+  async deleteDataConnector(id: number): Promise<boolean> {
+    return this.dataConnectors.delete(id);
+  }
+  
+  async getDataPermissions(dataSourceId: number): Promise<DataPermission[]> {
+    return Array.from(this.dataPermissions.values()).filter(
+      permission => permission.dataSourceId === dataSourceId
+    );
+  }
+  
+  async createDataPermission(permission: InsertDataPermission): Promise<DataPermission> {
+    const id = this.currentDataPermissionId++;
+    const newPermission: DataPermission = {
+      ...permission,
+      id,
+      createdAt: new Date(),
+      dataSourceId: permission.dataSourceId || null,
+      userId: permission.userId || null,
+      agentId: permission.agentId || null
+    };
+    this.dataPermissions.set(id, newPermission);
+    return newPermission;
+  }
+  
+  async deleteDataPermission(id: number): Promise<boolean> {
+    return this.dataPermissions.delete(id);
   }
   
   // Initialize with mock data
@@ -374,4 +488,223 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [createdUser] = await db.insert(users).values(user).returning();
+    return createdUser;
+  }
+  
+  // Agent methods
+  async getAgents(): Promise<Agent[]> {
+    return await db.select().from(agents);
+  }
+  
+  async getAgentById(id: string): Promise<Agent | undefined> {
+    const [agent] = await db.select().from(agents).where(eq(agents.id, id));
+    return agent || undefined;
+  }
+  
+  async createAgent(agent: InsertAgent): Promise<Agent> {
+    const [createdAgent] = await db.insert(agents).values(agent).returning();
+    return createdAgent;
+  }
+  
+  async updateAgent(id: string, agent: UpdateAgent): Promise<Agent | undefined> {
+    const [updatedAgent] = await db
+      .update(agents)
+      .set(agent)
+      .where(eq(agents.id, id))
+      .returning();
+    return updatedAgent || undefined;
+  }
+  
+  // Agent Component methods - for enhanced builder
+  async getAgentComponents(agentId: string): Promise<AgentComponent[]> {
+    return await db
+      .select()
+      .from(agentComponents)
+      .where(eq(agentComponents.agentId, agentId));
+  }
+  
+  async getAgentComponentById(id: number): Promise<AgentComponent | undefined> {
+    const [component] = await db
+      .select()
+      .from(agentComponents)
+      .where(eq(agentComponents.id, id));
+    return component || undefined;
+  }
+  
+  async createAgentComponent(component: InsertAgentComponent): Promise<AgentComponent> {
+    const [createdComponent] = await db
+      .insert(agentComponents)
+      .values(component)
+      .returning();
+    return createdComponent;
+  }
+  
+  async updateAgentComponent(id: number, component: UpdateAgentComponent): Promise<AgentComponent | undefined> {
+    const [updatedComponent] = await db
+      .update(agentComponents)
+      .set(component)
+      .where(eq(agentComponents.id, id))
+      .returning();
+    return updatedComponent || undefined;
+  }
+  
+  async deleteAgentComponent(id: number): Promise<boolean> {
+    const result = await db
+      .delete(agentComponents)
+      .where(eq(agentComponents.id, id));
+    return result.length > 0;
+  }
+  
+  // Run methods
+  async getRuns(): Promise<Run[]> {
+    return await db.select().from(runs);
+  }
+  
+  async getRunById(id: string): Promise<Run | undefined> {
+    const [run] = await db.select().from(runs).where(eq(runs.id, id));
+    return run || undefined;
+  }
+  
+  async createRun(run: InsertRun): Promise<Run> {
+    const [createdRun] = await db.insert(runs).values(run).returning();
+    return createdRun;
+  }
+  
+  async updateRunStatus(id: string, status: string): Promise<Run | undefined> {
+    const [updatedRun] = await db
+      .update(runs)
+      .set({ status })
+      .where(eq(runs.id, id))
+      .returning();
+    return updatedRun || undefined;
+  }
+  
+  // Governance methods
+  async getGovernanceIssues(): Promise<GovernanceIssue[]> {
+    return await db.select().from(governanceIssues);
+  }
+  
+  async createGovernanceIssue(issue: InsertGovernanceIssue): Promise<GovernanceIssue> {
+    const [createdIssue] = await db
+      .insert(governanceIssues)
+      .values(issue)
+      .returning();
+    return createdIssue;
+  }
+  
+  async updateGovernanceIssue(id: string, status: string, notes?: string): Promise<GovernanceIssue | undefined> {
+    const updateData = notes ? { status, notes } : { status };
+    const [updatedIssue] = await db
+      .update(governanceIssues)
+      .set(updateData)
+      .where(eq(governanceIssues.id, Number(id)))
+      .returning();
+    return updatedIssue || undefined;
+  }
+  
+  // Data Fabric methods
+  async getDataSources(): Promise<DataSource[]> {
+    return await db.select().from(dataSources);
+  }
+  
+  async getDataSourceById(id: number): Promise<DataSource | undefined> {
+    const [source] = await db.select().from(dataSources).where(eq(dataSources.id, id));
+    return source || undefined;
+  }
+  
+  async createDataSource(source: InsertDataSource): Promise<DataSource> {
+    const [createdSource] = await db
+      .insert(dataSources)
+      .values(source)
+      .returning();
+    return createdSource;
+  }
+  
+  async updateDataSource(id: number, source: UpdateDataSource): Promise<DataSource | undefined> {
+    const [updatedSource] = await db
+      .update(dataSources)
+      .set(source)
+      .where(eq(dataSources.id, id))
+      .returning();
+    return updatedSource || undefined;
+  }
+  
+  async deleteDataSource(id: number): Promise<boolean> {
+    const result = await db
+      .delete(dataSources)
+      .where(eq(dataSources.id, id));
+    return result.length > 0;
+  }
+  
+  async getDataConnectors(): Promise<DataConnector[]> {
+    return await db.select().from(dataConnectors);
+  }
+  
+  async getDataConnectorById(id: number): Promise<DataConnector | undefined> {
+    const [connector] = await db.select().from(dataConnectors).where(eq(dataConnectors.id, id));
+    return connector || undefined;
+  }
+  
+  async createDataConnector(connector: InsertDataConnector): Promise<DataConnector> {
+    const [createdConnector] = await db
+      .insert(dataConnectors)
+      .values(connector)
+      .returning();
+    return createdConnector;
+  }
+  
+  async updateDataConnector(id: number, connector: UpdateDataConnector): Promise<DataConnector | undefined> {
+    const [updatedConnector] = await db
+      .update(dataConnectors)
+      .set(connector)
+      .where(eq(dataConnectors.id, id))
+      .returning();
+    return updatedConnector || undefined;
+  }
+  
+  async deleteDataConnector(id: number): Promise<boolean> {
+    const result = await db
+      .delete(dataConnectors)
+      .where(eq(dataConnectors.id, id));
+    return result.length > 0;
+  }
+  
+  async getDataPermissions(dataSourceId: number): Promise<DataPermission[]> {
+    return await db
+      .select()
+      .from(dataPermissions)
+      .where(eq(dataPermissions.dataSourceId, dataSourceId));
+  }
+  
+  async createDataPermission(permission: InsertDataPermission): Promise<DataPermission> {
+    const [createdPermission] = await db
+      .insert(dataPermissions)
+      .values(permission)
+      .returning();
+    return createdPermission;
+  }
+  
+  async deleteDataPermission(id: number): Promise<boolean> {
+    const result = await db
+      .delete(dataPermissions)
+      .where(eq(dataPermissions.id, id));
+    return result.length > 0;
+  }
+}
+
+// Use DatabaseStorage for both development and production
+export const storage = new DatabaseStorage();
