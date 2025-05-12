@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChatMessage, ReasoningTrace, PromptItem } from "@/lib/types";
 import ChatTest from "./ChatTest";
+import EnhancedChatTest from "./EnhancedChatTest";
 import FlowView from "./FlowView";
 import PromptEditor from "./PromptEditor";
 import AgentActionChat from "../agents/chat/AgentActionChat";
@@ -24,7 +25,7 @@ const StudioMain = ({
   onClosePromptEditor,
   agentName = "Accelerated UW Agent"
 }: StudioMainProps) => {
-  const [activeView, setActiveView] = useState<'chat' | 'flow' | 'actions'>('actions');
+  const [activeView, setActiveView] = useState<'chat' | 'enhanced' | 'flow' | 'actions'>('enhanced');
   
   return (
     <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">

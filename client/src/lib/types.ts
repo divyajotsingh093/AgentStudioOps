@@ -86,4 +86,7 @@ export interface ReasoningTrace {
   action?: string;
   action_input?: any;
   observation?: any;
+  actionType?: 'data-fabric-query' | 'document-extraction' | 'risk-calculation' | 'email-notification' | 'policy-search' | 'threshold-alert';
+  actionTitle?: string;
+  actionData?: any;
 }
