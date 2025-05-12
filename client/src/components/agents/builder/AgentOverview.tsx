@@ -268,7 +268,7 @@ const AgentOverview = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={prepareChartData(mockOverviewData.sparklines.cost)}>
                     <Tooltip 
-                      formatter={(value) => [`$${value.toFixed(2)}`, 'Cost']}
+                      formatter={(value) => [`$${typeof value === 'number' ? value.toFixed(2) : value}`, 'Cost']}
                       labelFormatter={() => ''}
                     />
                     <Line 

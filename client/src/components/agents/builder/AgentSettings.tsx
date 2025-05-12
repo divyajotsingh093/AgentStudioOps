@@ -257,7 +257,7 @@ const AgentSettings = () => {
             </AccordionSection>
             
             {/* Tools Settings */}
-            <AccordionSection icon={Tool} title="Tools">
+            <AccordionSection icon={Wrench} title="Tools">
               <div className="space-y-4">
                 <p className="text-sm text-gray-500">Enable or disable tools the agent can use.</p>
                 

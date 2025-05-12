@@ -3,15 +3,25 @@ import { useParams } from "wouter";
 import StudioHeader from "@/components/studio/StudioHeader";
 import StudioSidebar from "@/components/studio/StudioSidebar";
 import StudioMain from "@/components/studio/StudioMain";
+import AgentOverview from "@/components/agents/builder/AgentOverview";
+import AgentMetrics from "@/components/agents/builder/AgentMetrics";
+import AgentEvalQA from "@/components/agents/builder/AgentEvalQA";
+import AgentPolicyInsights from "@/components/agents/builder/AgentPolicyInsights";
+import AgentVersionDiff from "@/components/agents/builder/AgentVersionDiff";
+import AgentDataLineage from "@/components/agents/builder/AgentDataLineage";
+import AgentToolTelemetry from "@/components/agents/builder/AgentToolTelemetry";
+import AgentSettings from "@/components/agents/builder/AgentSettings";
 import { agents, contextItems, toolItems, promptItems, policyItems, chatMessages, reasoningTraces } from "@/lib/mock-data";
 import { Agent, ChatMessage, PromptItem } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 const AgentStudio = () => {
   const { id } = useParams();
   const [agent, setAgent] = useState<Agent | null>(null);
-  const [activeTab, setActiveTab] = useState('Build');
+  const [activeTab, setActiveTab] = useState('Overview');
   const [messages, setMessages] = useState<ChatMessage[]>(chatMessages);
   const [selectedPrompt, setSelectedPrompt] = useState<PromptItem | null>(null);
+  const { toast } = useToast();
   
   useEffect(() => {
     // Find agent by ID
@@ -71,6 +81,11 @@ const AgentStudio = () => {
     // Update or add prompt in a real app
     console.log('Saving prompt:', prompt);
     setSelectedPrompt(null);
+    
+    toast({
+      title: "Prompt saved",
+      description: `Prompt "${prompt.name}" has been saved successfully.`,
+    });
   };
   
   if (!agent) {
@@ -87,6 +102,12 @@ const AgentStudio = () => {
       />
       
       <div className="flex-1 flex overflow-hidden">
+        {activeTab === 'Overview' && (
+          <div className="flex-1 overflow-y-auto">
+            <AgentOverview />
+          </div>
+        )}
+        
         {activeTab === 'Build' && (
           <>
             <StudioSidebar 
@@ -109,31 +130,45 @@ const AgentStudio = () => {
           </>
         )}
         
-        {activeTab === 'Test' && (
-          <div className="flex-1 p-6">
-            <h2 className="text-lg font-medium">Test Tab Content</h2>
-            <p className="mt-2 text-gray-600">This is where more comprehensive testing features would go.</p>
+        {activeTab === 'Metrics' && (
+          <div className="flex-1 overflow-y-auto">
+            <AgentMetrics />
           </div>
         )}
         
-        {activeTab === 'Deploy' && (
-          <div className="flex-1 p-6">
-            <h2 className="text-lg font-medium">Deploy Tab Content</h2>
-            <p className="mt-2 text-gray-600">This is where deployment configuration would go.</p>
+        {activeTab === 'Eval' && (
+          <div className="flex-1 overflow-y-auto">
+            <AgentEvalQA />
+          </div>
+        )}
+        
+        {activeTab === 'Policy' && (
+          <div className="flex-1 overflow-y-auto">
+            <AgentPolicyInsights />
           </div>
         )}
         
         {activeTab === 'Versions' && (
-          <div className="flex-1 p-6">
-            <h2 className="text-lg font-medium">Versions Tab Content</h2>
-            <p className="mt-2 text-gray-600">This is where version history would go.</p>
+          <div className="flex-1 overflow-y-auto">
+            <AgentVersionDiff />
           </div>
         )}
         
-        {activeTab === 'Governance' && (
-          <div className="flex-1 p-6">
-            <h2 className="text-lg font-medium">Governance Tab Content</h2>
-            <p className="mt-2 text-gray-600">This is where governance settings would go.</p>
+        {activeTab === 'Lineage' && (
+          <div className="flex-1 overflow-y-auto">
+            <AgentDataLineage />
+          </div>
+        )}
+        
+        {activeTab === 'Tools' && (
+          <div className="flex-1 overflow-y-auto">
+            <AgentToolTelemetry />
+          </div>
+        )}
+        
+        {activeTab === 'Settings' && (
+          <div className="flex-1 overflow-y-auto">
+            <AgentSettings />
           </div>
         )}
       </div>

@@ -136,7 +136,7 @@ const AgentPolicyInsights = () => {
             <ul className="space-y-2">
               {mockPolicyData.tools.map((tool, index) => (
                 <li key={index} className="flex items-center">
-                  <div className="h-2 w-2 rounded-full bg-blue-600 mr-2"></div>
+                  <div className="h-2 w-2 rounded-full bg-blue-600 mr-2" />
                   <code className="text-sm bg-gray-100 px-2 py-1 rounded">{tool}</code>
                 </li>
               ))}
@@ -154,21 +154,21 @@ const AgentPolicyInsights = () => {
               <div className="p-3 bg-gray-50 rounded-md">
                 <p className="text-xs font-medium text-gray-700">SSN Pattern</p>
                 <code className="text-xs text-gray-600 block mt-1">
-                  \b(?!000|666|9\d{2})([0-8]\d{2}|7([0-6]\d|7[012]))([-]?|\s{1})(?!00)\d\d\2(?!0000)\d{4}\b
+                  {`\\b(?!000|666|9\\d{2})([0-8]\\d{2}|7([0-6]\\d|7[012]))([-]?|\\s{1})(?!00)\\d\\d\\2(?!0000)\\d{4}\\b`}
                 </code>
               </div>
               
               <div className="p-3 bg-gray-50 rounded-md">
                 <p className="text-xs font-medium text-gray-700">Credit Card Pattern</p>
                 <code className="text-xs text-gray-600 block mt-1">
-                  \b(?:\d[ -]*?){13,16}\b
+                  {`\\b(?:\\d[ -]*?){13,16}\\b`}
                 </code>
               </div>
               
               <div className="p-3 bg-gray-50 rounded-md">
                 <p className="text-xs font-medium text-gray-700">Phone Number Pattern</p>
                 <code className="text-xs text-gray-600 block mt-1">
-                  \b(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b
+                  {`\\b(\\+\\d{1,2}\\s)?\\(?\\d{3}\\)?[\\s.-]\\d{3}[\\s.-]\\d{4}\\b`}
                 </code>
               </div>
             </div>
