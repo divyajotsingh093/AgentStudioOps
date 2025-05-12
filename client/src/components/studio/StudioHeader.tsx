@@ -1,5 +1,17 @@
 import { Link } from "wouter";
-import { ArrowLeft, HelpCircle, Upload } from "lucide-react";
+import { 
+  ArrowLeft, 
+  HelpCircle, 
+  Upload, 
+  LayoutDashboard, 
+  BarChart2, 
+  ClipboardCheck, 
+  ShieldCheck, 
+  GitCompare, 
+  Network, 
+  Wrench, 
+  Settings 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
@@ -20,7 +32,17 @@ const StudioHeader = ({
 }: StudioHeaderProps) => {
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   
-  const tabs = ['Build', 'Test', 'Deploy', 'Versions', 'Governance'];
+  const tabs = [
+    { id: 'Overview', icon: <LayoutDashboard className="h-4 w-4 mr-2" /> },
+    { id: 'Build', icon: <Wrench className="h-4 w-4 mr-2" /> },
+    { id: 'Metrics', icon: <BarChart2 className="h-4 w-4 mr-2" /> },
+    { id: 'Eval', icon: <ClipboardCheck className="h-4 w-4 mr-2" /> },
+    { id: 'Policy', icon: <ShieldCheck className="h-4 w-4 mr-2" /> },
+    { id: 'Versions', icon: <GitCompare className="h-4 w-4 mr-2" /> },
+    { id: 'Lineage', icon: <Network className="h-4 w-4 mr-2" /> },
+    { id: 'Tools', icon: <Wrench className="h-4 w-4 mr-2" /> },
+    { id: 'Settings', icon: <Settings className="h-4 w-4 mr-2" /> }
+  ];
   
   return (
     <div className="bg-white border-b border-gray-200">
@@ -48,14 +70,15 @@ const StudioHeader = ({
           </div>
         </div>
         
-        <div className="flex border-b border-gray-200 mt-4">
+        <div className="flex border-b border-gray-200 mt-4 overflow-x-auto scrollbar-hide pb-1">
           {tabs.map((tab) => (
             <button
-              key={tab}
-              className={`studio-tab ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => onTabChange(tab)}
+              key={tab.id}
+              className={`studio-tab ${activeTab === tab.id ? 'active' : ''} whitespace-nowrap flex items-center`}
+              onClick={() => onTabChange(tab.id)}
             >
-              {tab}
+              {tab.icon}
+              {tab.id}
             </button>
           ))}
         </div>

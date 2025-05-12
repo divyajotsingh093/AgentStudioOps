@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { 
   ShieldCheck, 
   DollarSign, 
-  Tool, 
+  Wrench, 
   AlertTriangle, 
   Download 
 } from "lucide-react";
@@ -61,7 +61,7 @@ const AgentPolicyInsights = () => {
         </Badge>
         
         <Badge className="py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 cursor-default flex items-center">
-          <Tool className="mr-1 h-4 w-4" />
+          <Wrench className="mr-1 h-4 w-4" />
           Tools Allow-List ({mockPolicyData.tools.length})
         </Badge>
         
