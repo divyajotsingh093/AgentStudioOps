@@ -132,7 +132,10 @@ const EnhancedChatTest = ({
           </div>
           
           <ScrollArea className="flex-1 p-4">
-            <ReasoningFlow traces={reasoningTraces} />
+            <ReasoningFlow 
+              messages={chatMessages}
+              reasoningTraces={reasoningTraces} 
+            />
           </ScrollArea>
         </div>
       </ResizablePanel>

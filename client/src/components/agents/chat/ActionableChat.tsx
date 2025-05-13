@@ -332,47 +332,39 @@ const ActionableChat = ({
                   <div className="mb-2 pb-2 border-b border-gray-100">
                     <div className="flex items-center">
                       <Sparkles className="h-4 w-4 text-purple-500 mr-2" />
-                      <h3 className="text-sm font-medium text-gray-800">Thought Process</h3>
+                      <h3 className="text-sm font-medium text-gray-800">{trace.title}</h3>
                     </div>
-                    <p className="mt-2 text-sm text-gray-700">{trace.thought}</p>
+                    <p className="mt-2 text-sm text-gray-700">{trace.content}</p>
                   </div>
                   
-                  {trace.action && (
+                  {trace.result && (
                     <div className="mb-2 pb-2 border-b border-gray-100">
                       <div className="flex items-center">
                         <ChevronRight className="h-4 w-4 text-blue-500 mr-2" />
-                        <h3 className="text-sm font-medium text-gray-800">Action: {trace.action}</h3>
+                        <h3 className="text-sm font-medium text-gray-800">Result</h3>
                       </div>
-                      {trace.action_input && (
-                        <div className="mt-1 bg-gray-50 p-2 rounded text-xs font-mono">
-                          {typeof trace.action_input === 'object' 
-                            ? JSON.stringify(trace.action_input, null, 2) 
-                            : trace.action_input}
-                        </div>
-                      )}
+                      <div className="mt-1 bg-gray-50 p-2 rounded text-xs font-mono">
+                        {trace.result}
+                      </div>
                     </div>
                   )}
                   
-                  {trace.observation && (
+                  {trace.action && (
                     <div>
                       <div className="flex items-center">
                         <ChevronRight className="h-4 w-4 text-green-500 mr-2" />
-                        <h3 className="text-sm font-medium text-gray-800">Observation</h3>
+                        <h3 className="text-sm font-medium text-gray-800">Action: {trace.action.title}</h3>
                       </div>
-                      <div className="mt-1 bg-gray-50 p-2 rounded text-xs">
-                        {typeof trace.observation === 'object' 
-                          ? (
-                            <div className="space-y-1">
-                              {Object.entries(trace.observation).map(([key, value]) => (
-                                <div key={key} className="flex">
-                                  <span className="font-semibold min-w-[120px]">{key}:</span>
-                                  <span>{String(value)}</span>
-                                </div>
-                              ))}
-                            </div>
-                          ) 
-                          : trace.observation}
+                      <div className="mt-1 mb-2 text-xs text-gray-600">
+                        {trace.action.description}
                       </div>
+                      {trace.action.data && (
+                        <div className="mt-1 bg-gray-50 p-2 rounded text-xs font-mono">
+                          {typeof trace.action.data === 'object' 
+                            ? JSON.stringify(trace.action.data, null, 2) 
+                            : trace.action.data}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

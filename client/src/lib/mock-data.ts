@@ -226,97 +226,105 @@ export const chatMessages: ChatMessage[] = [
 
 export const reasoningTraces: ReasoningTrace[] = [
   {
-    thought: "Processing an underwriting request for a 35-year-old non-smoker with hypertension.",
-    action: "ask_for_details",
-    action_input: "Need specific health metrics and coverage details to evaluate."
+    id: "trace-1",
+    title: "Initial Assessment",
+    type: "thought",
+    content: "Processing an underwriting request for a 35-year-old non-smoker with hypertension.",
+    timestamp: new Date().toISOString(),
+    durationMs: 150
   },
   {
-    thought: "Received BP readings, medication info, diagnosis history, and coverage amount. Let me first check if the customer has any existing policies in our database.",
-    action: "query_data_fabric",
-    action_input: {
-      query: "SELECT * FROM customers WHERE health_condition = 'hypertension' AND age = 35 AND smoking_status = 'non-smoker'",
-      limit: 5
-    },
-    observation: {
-      customers_found: 1,
-      customer_id: "CUST-5678",
-      existing_policies: 2
-    },
-    actionType: "data-fabric-query",
-    actionTitle: "Customer Database Search",
-    actionData: {
-      headers: ['Customer ID', 'Name', 'Policy Count', 'Status'],
-      rows: [
-        { id: 'CUST-5678', name: 'John Smith', policyCount: 2, status: { type: 'badge', value: 'Active', color: 'green' } },
-      ]
+    id: "trace-2",
+    title: "Customer Search",
+    type: "data-query",
+    content: "Received BP readings, medication info, diagnosis history, and coverage amount. Let me first check if the customer has any existing policies in our database.",
+    timestamp: new Date().toISOString(),
+    durationMs: 320,
+    result: "Found 1 customer matching the criteria with 2 existing policies.",
+    action: {
+      type: "data-query",
+      title: "Customer Query Results",
+      description: "Retrieved customer information from CRM database",
+      data: {
+        headers: ['Customer ID', 'Name', 'Policy Count', 'Status'],
+        rows: [
+          { id: 'CUST-5678', name: 'John Smith', policyCount: 2, status: { type: 'badge', value: 'Active', color: 'green' } }
+        ]
+      }
     }
   },
   {
-    thought: "Found the customer in our database. They have two existing policies. Now I'll check the medical records for more details on the hypertension condition.",
-    action: "extract_document",
-    action_input: {
-      document_id: "MED-12345",
-      fields_to_extract: ["blood_pressure", "medications", "diagnosis_date", "physician_notes"]
-    },
-    observation: {
-      extracted_data: {
-        blood_pressure: "140/90 mmHg",
-        medications: "Lisinopril 10mg",
-        diagnosis_date: "06/15/2022",
-        physician_notes: "Patient's hypertension appears well-controlled with current medication"
-      },
-      confidence: 0.94
-    },
-    actionType: "document-extraction",
-    actionTitle: "Medical Records Analysis",
-    actionData: {
-      document: "Medical_Report_12345.pdf",
-      model: "Medical IDP v2.1",
-      confidence: 94,
-      fields: [
-        { name: "Blood Pressure", value: "140/90 mmHg" },
-        { name: "Medication", value: "Lisinopril 10mg" },
-        { name: "Diagnosis Date", value: "06/15/2022" },
-        { name: "Physician", value: "Dr. Robert Chen" }
-      ]
+    id: "trace-3",
+    title: "Medical Records Analysis",
+    type: "document",
+    content: "Found the customer in our database. They have two existing policies. Now I'll check the medical records for more details on the hypertension condition.",
+    timestamp: new Date().toISOString(),
+    durationMs: 610,
+    result: "Medical records confirm hypertension diagnosis from 3 years ago. Blood pressure is 140/90 mmHg with Lisinopril 10mg medication.",
+    action: {
+      type: "document",
+      title: "Medical Records Extraction",
+      description: "Extracted key information from medical documents",
+      data: {
+        document: "Medical_Report_12345.pdf",
+        model: "Medical IDP v2.1",
+        confidence: 94,
+        fields: [
+          { name: "Blood Pressure", value: "140/90 mmHg" },
+          { name: "Medication", value: "Lisinopril 10mg" },
+          { name: "Diagnosis Date", value: "06/15/2022" },
+          { name: "Physician", value: "Dr. Robert Chen" }
+        ]
+      }
     }
   },
   {
-    thought: "Now I'll run the risk assessment based on all the information gathered.",
-    action: "call_rules_engine",
-    action_input: {
-      age: 35,
-      smoking_status: "non-smoker",
-      bp_systolic: 140,
-      bp_diastolic: 90,
-      medications: ["lisinopril 10mg"],
-      conditions: ["hypertension"],
-      diagnosis_years: 3,
-      coverage_amount: 500000
-    },
-    observation: {
-      bp_category: "controlled hypertension",
-      medication_assessment: "standard single medication",
-      risk_factors: "minimal",
-      rating_recommendation: "Standard Plus",
-      confidence: 0.87
-    },
-    actionType: "risk-calculation",
-    actionTitle: "Risk Assessment",
-    actionData: {
-      title: "Underwriting Recommendation",
-      result: { value: "Standard Plus", color: "green" },
-      factors: [
-        { name: "Hypertension", value: "Controlled" },
-        { name: "Medication", value: "Single standard" },
-        { name: "Build", value: "Within range" },
-        { name: "Confidence", value: "87%" }
-      ]
+    id: "trace-4",
+    title: "Risk Assessment",
+    type: "calculation",
+    content: "Now I'll run the risk assessment based on all the information gathered.",
+    timestamp: new Date().toISOString(),
+    durationMs: 450,
+    result: "Risk calculation complete. Standard Plus classification determined with 87% confidence.",
+    action: {
+      type: "calculation",
+      title: "Risk Assessment Results",
+      description: "Calculated risk score based on medical information",
+      data: {
+        title: "Underwriting Recommendation",
+        result: { value: "Standard Plus", color: "green" },
+        factors: [
+          { name: "Hypertension", value: "Controlled" },
+          { name: "Medication", value: "Single standard" },
+          { name: "Build", value: "Within range" },
+          { name: "Confidence", value: "87%" }
+        ]
+      }
     }
   },
   {
-    thought: "The applicant's condition is well controlled with a single medication. Blood pressure is slightly elevated but within acceptable limits for Standard Plus. The customer has existing policies with us which shows a good relationship.",
-    action: "provide_assessment",
-    action_input: "Standard Plus rating with detailed explanation"
+    id: "trace-5",
+    title: "Final Recommendation",
+    type: "thought",
+    content: "The applicant's condition is well controlled with a single medication. Blood pressure is slightly elevated but within acceptable limits for Standard Plus. The customer has existing policies with us which shows a good relationship.",
+    timestamp: new Date().toISOString(),
+    durationMs: 200,
+    action: {
+      type: "notification",
+      title: "Underwriter Notification",
+      description: "Prepared report for underwriter review",
+      data: {
+        to: "underwriter@neutrinos.com",
+        subject: "Standard Plus Application Ready for Review",
+        status: { value: "Sent", color: "green" },
+        key_factors: [
+          "35-year-old non-smoker",
+          "Controlled hypertension (BP 140/90)",
+          "Single medication (lisinopril 10mg)",
+          "No other health issues",
+          "Coverage: $500,000"
+        ]
+      }
+    }
   }
 ];
