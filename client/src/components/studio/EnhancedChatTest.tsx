@@ -55,7 +55,7 @@ const EnhancedChatTest = ({
         <div className="flex flex-col h-full">
           <div className="p-4 border-b flex items-center justify-between">
             <div className="flex items-center">
-              <MessageSquare className="h-5 w-5 text-blue-500 mr-2" />
+              <MessageSquare className="h-5 w-5 text-neutrinos-blue mr-2" />
               <h3 className="font-medium">Chat Interface</h3>
             </div>
           </div>
@@ -71,12 +71,12 @@ const EnhancedChatTest = ({
                   <div
                     className={`max-w-[80%] rounded-lg p-3 ${
                       message.role === 'user'
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-neutrinos-blue text-white'
                         : 'bg-gray-100 text-gray-900'
                     }`}
                   >
                     {message.role === 'agent' && message.tool && (
-                      <Badge className="mb-1 bg-blue-100 text-blue-700" variant="outline">
+                      <Badge className="mb-1 bg-neutrinos-blue/10 text-neutrinos-blue" variant="outline">
                         {message.tool}
                       </Badge>
                     )}
@@ -123,7 +123,7 @@ const EnhancedChatTest = ({
         <div className="flex flex-col h-full">
           <div className="p-4 border-b flex items-center justify-between">
             <div className="flex items-center">
-              <Sparkles className="h-5 w-5 text-purple-500 mr-2" />
+              <Sparkles className="h-5 w-5 text-neutrinos-blue mr-2" />
               <h3 className="font-medium">Chain of Thought</h3>
             </div>
             <Badge variant="outline">

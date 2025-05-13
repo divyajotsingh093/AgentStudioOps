@@ -88,6 +88,12 @@ const StudioMain = ({
             reasoningTraces={reasoningTraces}
             onSendMessage={onSendMessage}
           />
+        ) : activeView === 'enhanced' ? (
+          <EnhancedChatTest
+            messages={chatMessages}
+            reasoningTraces={reasoningTraces}
+            onSendMessage={onSendMessage}
+          />
         ) : (
           <FlowView />
         )}
