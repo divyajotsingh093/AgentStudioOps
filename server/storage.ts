@@ -726,6 +726,62 @@ export class DatabaseStorage implements IStorage {
       .where(eq(dataPermissions.id, id));
     return !!result;
   }
+  
+  // Tool Integration methods
+  async getTools(): Promise<AgentTool[]> {
+    return await db.select().from(agentTools);
+  }
+  
+  async getToolById(id: number): Promise<AgentTool | undefined> {
+    const [tool] = await db.select().from(agentTools).where(eq(agentTools.id, id));
+    return tool || undefined;
+  }
+  
+  async createTool(tool: InsertAgentTool): Promise<AgentTool> {
+    const [createdTool] = await db.insert(agentTools).values(tool).returning();
+    return createdTool;
+  }
+  
+  async updateTool(id: number, tool: UpdateAgentTool): Promise<AgentTool | undefined> {
+    const [updatedTool] = await db
+      .update(agentTools)
+      .set(tool)
+      .where(eq(agentTools.id, id))
+      .returning();
+    return updatedTool || undefined;
+  }
+  
+  async deleteTool(id: number): Promise<boolean> {
+    const result = await db
+      .delete(agentTools)
+      .where(eq(agentTools.id, id));
+    return !!result;
+  }
+  
+  // Tool Execution methods
+  async getToolExecutions(toolId?: number, runId?: string): Promise<ToolExecution[]> {
+    let query = db.select().from(toolExecutions);
+    
+    if (toolId) {
+      query = query.where(eq(toolExecutions.toolId, toolId));
+    }
+    
+    if (runId) {
+      query = query.where(eq(toolExecutions.runId, runId));
+    }
+    
+    return await query;
+  }
+  
+  async createToolExecution(execution: InsertToolExecution): Promise<ToolExecution> {
+    const [createdExecution] = await db.insert(toolExecutions).values(execution).returning();
+    return createdExecution;
+  }
+  
+  async getToolExecutionById(id: number): Promise<ToolExecution | undefined> {
+    const [execution] = await db.select().from(toolExecutions).where(eq(toolExecutions.id, id));
+    return execution || undefined;
+  }
 }
 
 // Use DatabaseStorage for both development and production
