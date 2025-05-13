@@ -99,7 +99,7 @@ const AgentStudio = () => {
       <AppHeader>
         <div className="flex items-center space-x-2">
           <span className="text-lg font-medium text-gray-800">{agent.name}</span>
-          <Badge className="bg-blue-100 text-blue-700">{agent.type[0]}</Badge>
+          <Badge className="bg-neutrinos-blue/10 text-neutrinos-blue">{agent.type[0]}</Badge>
         </div>
       </AppHeader>
       

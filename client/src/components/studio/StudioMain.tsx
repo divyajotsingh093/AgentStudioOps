@@ -34,7 +34,7 @@ const StudioMain = ({
         <button 
           className={`px-3 py-1 rounded-md text-sm font-medium mr-2 ${
             activeView === 'enhanced' 
-              ? 'bg-primary text-white' 
+              ? 'bg-neutrinos-blue text-white' 
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
           onClick={() => setActiveView('enhanced')}
@@ -44,7 +44,7 @@ const StudioMain = ({
         <button 
           className={`px-3 py-1 rounded-md text-sm font-medium mr-2 ${
             activeView === 'actions' 
-              ? 'bg-primary text-white' 
+              ? 'bg-neutrinos-blue text-white' 
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
           onClick={() => setActiveView('actions')}
@@ -54,7 +54,7 @@ const StudioMain = ({
         <button 
           className={`px-3 py-1 rounded-md text-sm font-medium mr-2 ${
             activeView === 'chat' 
-              ? 'bg-primary text-white' 
+              ? 'bg-neutrinos-blue text-white' 
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
           onClick={() => setActiveView('chat')}
@@ -64,7 +64,7 @@ const StudioMain = ({
         <button 
           className={`px-3 py-1 rounded-md text-sm font-medium ${
             activeView === 'flow' 
-              ? 'bg-primary text-white' 
+              ? 'bg-neutrinos-blue text-white' 
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
           onClick={() => setActiveView('flow')}
