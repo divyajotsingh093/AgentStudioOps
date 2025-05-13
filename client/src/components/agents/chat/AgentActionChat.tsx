@@ -16,6 +16,7 @@ import ActionableChat from "./ActionableChat";
 import AvailableActions from "./AvailableActions";
 import PolicyDetails from "./PolicyDetails";
 import ActionHistory from "./ActionHistory";
+import ReasoningFlow from "./ReasoningFlow";
 import { ChatMessage, ReasoningTrace } from "@/lib/types";
 
 interface AgentActionChatProps {
@@ -68,31 +69,40 @@ const AgentActionChat: React.FC<AgentActionChatProps> = ({
       </div>
 
       <ResizablePanelGroup direction="horizontal" className="flex-1">
-        {/* Main Chat Panel */}
-        <ResizablePanel defaultSize={60} minSize={40}>
-          <div className="flex flex-col h-full">
-            {/* Policy Details - Shown above the chat */}
-            <PolicyDetails />
-
-            {/* Available Actions */}
-            <AvailableActions onActionSelect={handleActionSelect} />
-
-            {/* Chat Interface */}
-            <div className="flex-1 overflow-hidden">
+        {/* Left Panel: Chat and Actions */}
+        <ResizablePanel defaultSize={70} minSize={50}>
+          <ResizablePanelGroup direction="vertical">
+            <ResizablePanel defaultSize={30}>
+              <div className="flex h-full">
+                <div className="w-1/2 border-r">
+                  <AvailableActions onActionSelect={handleActionSelect} />
+                </div>
+                <div className="w-1/2">
+                  <ActionHistory />
+                </div>
+              </div>
+            </ResizablePanel>
+            
+            <ResizableHandle withHandle />
+            
+            <ResizablePanel defaultSize={70}>
               <ActionableChat 
                 messages={messages} 
                 reasoningTraces={reasoningTraces}
                 onSendMessage={onSendMessage}
               />
-            </div>
-          </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </ResizablePanel>
 
         <ResizableHandle withHandle />
 
-        {/* Right Panel: Action History */}
-        <ResizablePanel defaultSize={40} minSize={25}>
-          <ActionHistory />
+        {/* Right Panel: Reasoning Flow */}
+        <ResizablePanel defaultSize={30} minSize={25}>
+          <ReasoningFlow
+            messages={messages}
+            reasoningTraces={reasoningTraces}
+          />
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

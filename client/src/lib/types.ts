@@ -81,12 +81,20 @@ export interface ChatMessage {
   tool?: string;
 }
 
+export interface ActionDetails {
+  type: string;
+  title: string;
+  description: string;
+  data?: any;
+}
+
 export interface ReasoningTrace {
-  thought: string;
-  action?: string;
-  action_input?: any;
-  observation?: any;
-  actionType?: 'data-fabric-query' | 'document-extraction' | 'risk-calculation' | 'email-notification' | 'policy-search' | 'threshold-alert';
-  actionTitle?: string;
-  actionData?: any;
+  id: string;
+  title: string;
+  type: 'thought' | 'data-query' | 'calculation' | 'document' | 'notification' | 'alert';
+  content: string;
+  timestamp: string;
+  durationMs: number;
+  result?: string;
+  action?: ActionDetails;
 }

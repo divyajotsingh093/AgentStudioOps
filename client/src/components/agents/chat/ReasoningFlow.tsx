@@ -1,191 +1,174 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Sparkles, 
-  ChevronRight, 
-  ExternalLink, 
+  Brain, 
   Database, 
-  FileText,
-  Calculator,
-  Search,
-  ChevronsDown,
-  ChevronsUp,
-  AlertTriangle
-} from "lucide-react";
-import { ReasoningTrace } from "@/lib/types";
-import ActionCard, { ActionType } from "./ActionCard";
+  Calculator, 
+  FileText, 
+  Mail,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ChatMessage, ReasoningTrace } from '@/lib/types';
 
 interface ReasoningFlowProps {
-  traces: ReasoningTrace[];
+  messages: ChatMessage[];
+  reasoningTraces: ReasoningTrace[];
 }
 
-const ReasoningFlow: React.FC<ReasoningFlowProps> = ({ traces }) => {
-  const [expandedTraces, setExpandedTraces] = useState<number[]>([]);
-  const [expandedActionCards, setExpandedActionCards] = useState<number[]>([]);
-  const { toast } = useToast();
-  
-  const handleToggleTrace = (index: number) => {
+const ReasoningFlow: React.FC<ReasoningFlowProps> = ({
+  messages,
+  reasoningTraces
+}) => {
+  const [expandedTraces, setExpandedTraces] = React.useState<string[]>([]);
+
+  const toggleTraceExpand = (traceId: string) => {
     setExpandedTraces(prev => 
-      prev.includes(index) 
-        ? prev.filter(i => i !== index) 
-        : [...prev, index]
+      prev.includes(traceId) 
+        ? prev.filter(id => id !== traceId) 
+        : [...prev, traceId]
     );
   };
-  
-  const handleToggleActionCard = (index: number) => {
-    setExpandedActionCards(prev => 
-      prev.includes(index) 
-        ? prev.filter(i => i !== index) 
-        : [...prev, index]
-    );
-  };
-  
-  const handleActionCardAction = (action: string, data: any) => {
-    toast({
-      title: `Action: ${action}`,
-      description: `Performed ${action} on data`,
-    });
-  };
-  
-  const renderActionIcon = (action?: string) => {
-    if (!action) return null;
-    
-    switch(action) {
-      case 'call_rules_engine':
-        return <Calculator className="h-4 w-4 text-purple-500" />;
-      case 'query_data_fabric':
-        return <Database className="h-4 w-4 text-blue-500" />;
-      case 'extract_document':
-        return <FileText className="h-4 w-4 text-green-500" />;
-      case 'ask_for_details':
-        return <Search className="h-4 w-4 text-orange-500" />;
-      case 'provide_assessment':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+
+  const renderTraceIcon = (type: string) => {
+    switch(type) {
+      case 'thought':
+        return <Brain className="h-4 w-4 text-purple-500" />;
+      case 'data-query':
+        return <Database className="h-4 w-4 text-neutrinos-blue" />;
+      case 'calculation':
+        return <Calculator className="h-4 w-4 text-green-600" />;
+      case 'document':
+        return <FileText className="h-4 w-4 text-orange-500" />;
+      case 'notification':
+        return <Mail className="h-4 w-4 text-yellow-500" />;
+      case 'alert':
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
       default:
-        return <ChevronRight className="h-4 w-4 text-gray-500" />;
+        return <Brain className="h-4 w-4 text-gray-500" />;
     }
   };
 
   return (
-    <div className="space-y-4">
-      {traces.map((trace, index) => {
-        const isExpanded = expandedTraces.includes(index);
-        const isActionCardExpanded = expandedActionCards.includes(index);
-        const hasAction = !!trace.action;
-        const hasActionData = !!trace.actionType && !!trace.actionData;
-        
-        return (
-          <Card 
-            key={index} 
-            className={`border ${hasAction ? 'border-blue-200' : 'border-gray-200'} shadow-sm hover:shadow-md transition-shadow duration-200`}
-          >
-            <CardHeader className="py-3 px-4">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center">
-                  <Sparkles className="h-4 w-4 text-purple-500 mr-2 flex-shrink-0" />
-                  <CardTitle className="text-sm font-medium">
-                    {index + 1}. Reasoning Step
-                  </CardTitle>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 w-7 p-0" 
-                  onClick={() => handleToggleTrace(index)}
-                >
-                  {isExpanded ? 
-                    <ChevronsUp className="h-4 w-4" /> : 
-                    <ChevronsDown className="h-4 w-4" />
-                  }
-                </Button>
+    <div className="h-full flex flex-col">
+      <div className="px-4 py-3 border-b">
+        <h3 className="font-medium text-gray-900">Reasoning Flow</h3>
+        <p className="text-xs text-gray-500">Step-by-step chain of thought</p>
+      </div>
+      
+      <ScrollArea className="flex-1">
+        <div className="p-4">
+          {reasoningTraces.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-2">
+                <Brain className="h-8 w-8 mx-auto" />
               </div>
-            </CardHeader>
-            
-            <CardContent className="py-0 px-4 pb-3">
-              {/* Always show the thought */}
-              <div className="text-sm">
-                <p>{trace.thought}</p>
-              </div>
-              
-              {/* Conditionally show action, input, and observation when expanded */}
-              {isExpanded && hasAction && (
-                <div className="mt-3 space-y-3">
-                  <div className="flex items-center">
-                    {renderActionIcon(trace.action)}
-                    <span className="ml-2 text-sm font-medium">Action: {trace.action}</span>
+              <p className="text-sm text-gray-500">Reasoning flow will appear here</p>
+              <p className="text-xs text-gray-400 mt-1">
+                As the agent processes your request, you'll see its chain of thought here
+              </p>
+            </div>
+          )}
+
+          {reasoningTraces.map((trace, index) => (
+            <div key={trace.id} className="mb-4 last:mb-0">
+              <div className="flex">
+                <div className="flex flex-col items-center mr-3">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                    {renderTraceIcon(trace.type)}
                   </div>
-                  
-                  {trace.action_input && (
-                    <div className="pl-6">
-                      <div className="text-xs text-gray-500 mb-1">Input:</div>
-                      <div className="bg-gray-50 p-2 rounded text-xs font-mono overflow-x-auto">
-                        {typeof trace.action_input === 'object' 
-                          ? JSON.stringify(trace.action_input, null, 2)
-                          : trace.action_input
-                        }
-                      </div>
-                    </div>
-                  )}
-                  
-                  {trace.observation && !hasActionData && (
-                    <div className="pl-6">
-                      <div className="text-xs text-gray-500 mb-1">Observation:</div>
-                      <div className="bg-gray-50 p-2 rounded text-xs">
-                        {typeof trace.observation === 'object'
-                          ? JSON.stringify(trace.observation, null, 2)
-                          : trace.observation
-                        }
-                      </div>
-                    </div>
+                  {index < reasoningTraces.length - 1 && (
+                    <div className="w-0.5 bg-gray-200 h-full mt-2"></div>
                   )}
                 </div>
-              )}
-              
-              {/* Action Card */}
-              {hasActionData && (
-                <div className={`mt-3 ${isExpanded ? '' : 'pl-6'}`}>
-                  {!isExpanded && (
-                    <div className="flex items-center mb-2">
-                      {renderActionIcon(trace.action)}
-                      <span className="ml-2 text-xs font-medium">Action: {trace.action}</span>
-                      <Badge className="ml-2 text-xs bg-blue-100 text-blue-700">Executed</Badge>
-                    </div>
-                  )}
-                  
-                  <ActionCard
-                    type={trace.actionType as ActionType}
-                    title={trace.actionTitle || 'Action Result'}
-                    data={trace.actionData}
-                    expanded={isActionCardExpanded}
-                    onToggleExpand={() => handleToggleActionCard(index)}
-                    onAction={handleActionCardAction}
-                  />
+                
+                <div className="flex-1">
+                  <Card className="border-gray-200 mb-4">
+                    <CardContent className="p-3">
+                      <div className="flex justify-between items-start mb-1">
+                        <div className="flex items-center">
+                          <span className="text-sm font-medium mr-2">{trace.title}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {trace.type}
+                          </Badge>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => toggleTraceExpand(trace.id)}
+                        >
+                          {expandedTraces.includes(trace.id) ? 
+                            <ChevronUp className="h-4 w-4" /> : 
+                            <ChevronDown className="h-4 w-4" />
+                          }
+                        </Button>
+                      </div>
+                      
+                      <div className="text-xs text-gray-500 mb-1">
+                        {new Date(trace.timestamp).toLocaleTimeString()} · {trace.durationMs}ms
+                      </div>
+                      
+                      {!expandedTraces.includes(trace.id) ? (
+                        <p className="text-sm text-gray-600 line-clamp-2">
+                          {trace.content}
+                        </p>
+                      ) : (
+                        <div className="mt-2 space-y-2">
+                          <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                            {trace.content}
+                          </p>
+                          
+                          {trace.result && (
+                            <div className="bg-gray-50 p-2 rounded-md border border-gray-200 text-sm">
+                              <div className="font-medium text-xs text-gray-500 mb-1">Result:</div>
+                              <div className="text-sm">{trace.result}</div>
+                            </div>
+                          )}
+
+                          {trace.action && (
+                            <div className="mt-2">
+                              <Card className="border-neutrinos-blue/20 bg-neutrinos-blue/5">
+                                <CardContent className="p-3">
+                                  <div className="flex items-start">
+                                    <div className="mr-2 mt-0.5">
+                                      {renderTraceIcon(trace.action.type)}
+                                    </div>
+                                    <div>
+                                      <h5 className="text-sm font-medium">
+                                        {trace.action.title}
+                                      </h5>
+                                      <p className="text-xs text-gray-600 mt-1">
+                                        {trace.action.description}
+                                      </p>
+                                      
+                                      {trace.action.data && (
+                                        <div className="mt-2 bg-white rounded-md border border-gray-200 p-2 text-xs">
+                                          <pre className="whitespace-pre-wrap">
+                                            {JSON.stringify(trace.action.data, null, 2)}
+                                          </pre>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
-              )}
-              
-              {/* Show toggle button when not expanded */}
-              {!isExpanded && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="mt-2 text-xs w-full justify-center" 
-                  onClick={() => handleToggleTrace(index)}
-                >
-                  Show Details <ChevronsDown className="h-3 w-3 ml-1" />
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 };
