@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Send, ChevronRight, ChevronDown, X, Clock, CheckCircle, AlertCircle, AlertTriangle, RotateCw } from 'lucide-react';
+import { ArrowLeft, Send, ChevronRight, ChevronDown, X, Clock, CheckCircle, AlertCircle, AlertTriangle, RotateCw, Brain } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -9,6 +9,8 @@ import { Link } from 'wouter';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AgentAction, ActionHistoryItem } from '@/lib/mock-actions';
+import ReasoningFlow, { ReasoningAction } from './ReasoningFlow';
+import { findReasoningFlow } from '@/lib/mock-reasoning';
 
 interface ActionChatProps {
   agentId: string;
@@ -16,6 +18,13 @@ interface ActionChatProps {
   agentStatus: string;
   actions?: AgentAction[];
   history?: ActionHistoryItem[];
+}
+
+interface ChatMessage {
+  type: 'user' | 'agent' | 'action' | 'reasoning';
+  content: string;
+  timestamp: Date;
+  reasoningActions?: ReasoningAction[];
 }
 
 const ActionChat: React.FC<ActionChatProps> = ({ 
@@ -26,7 +35,7 @@ const ActionChat: React.FC<ActionChatProps> = ({
   history = []
 }) => {
   const [userInput, setUserInput] = useState('');
-  const [chatMessages, setChatMessages] = useState<{type: 'user' | 'agent' | 'action', content: string, timestamp: Date}[]>([
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       type: 'agent',
       content: `👋 Welcome to the ${agentName} action chat! I can help you with various insurance tasks. Please let me know what you need assistance with, or you can select an action from the sidebar.`,
@@ -34,9 +43,11 @@ const ActionChat: React.FC<ActionChatProps> = ({
     }
   ]);
   const [selectedAction, setSelectedAction] = useState<AgentAction | null>(null);
+  const [selectedReasoningAction, setSelectedReasoningAction] = useState<ReasoningAction | null>(null);
   const [actionInputs, setActionInputs] = useState<Record<string, string>>({});
   const [showActions, setShowActions] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Uncategorized', 'Policy', 'Underwriting']));
+  const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Scroll to bottom of messages when new messages are added
@@ -58,24 +69,46 @@ const ActionChat: React.FC<ActionChatProps> = ({
     if (!userInput.trim()) return;
     
     // Add user message
-    const userMessage = {
-      type: 'user' as const,
+    const userMessage: ChatMessage = {
+      type: 'user',
       content: userInput,
       timestamp: new Date()
     };
     
     setChatMessages([...chatMessages, userMessage]);
+    setIsThinking(true);
     
-    // Simulate agent response
+    // Clear previous actions
+    setSelectedAction(null);
+    setSelectedReasoningAction(null);
+    
+    // Simulate thinking and reasoning
     setTimeout(() => {
-      const agentResponse = {
-        type: 'agent' as const,
-        content: `I'll help you with that. Here are some actions I can take related to "${userInput}":`,
-        timestamp: new Date()
+      // Get reasoning flow based on user input
+      const reasoningActions = findReasoningFlow(userInput);
+      
+      // Add thinking message
+      const thinkingMessage: ChatMessage = {
+        type: 'reasoning',
+        content: 'Analyzing your request...',
+        timestamp: new Date(),
+        reasoningActions
       };
       
-      setChatMessages(prev => [...prev, agentResponse]);
-    }, 1000);
+      setChatMessages(prev => [...prev, thinkingMessage]);
+      setIsThinking(false);
+      
+      // Simulate agent response after thinking
+      setTimeout(() => {
+        const agentResponse: ChatMessage = {
+          type: 'agent',
+          content: `I've analyzed your request about "${userInput}" and identified several ways I can help. You can select one of the options below, or ask me for more details.`,
+          timestamp: new Date()
+        };
+        
+        setChatMessages(prev => [...prev, agentResponse]);
+      }, 1500);
+    }, 2000);
     
     setUserInput('');
   };
@@ -90,10 +123,60 @@ const ActionChat: React.FC<ActionChatProps> = ({
     }
   };
   
+  // Handle selection of a reasoning action
+  const handleReasoningActionSelect = (action: ReasoningAction) => {
+    setSelectedReasoningAction(action);
+    
+    // For Tool and API actions, we can create a more detailed response
+    if (action.category === 'Tool' || action.category === 'API' || action.category === 'Action') {
+      // Add action selection message
+      const selectionMessage: ChatMessage = {
+        type: 'action',
+        content: `I'll use the ${action.title} option to help with your request.`,
+        timestamp: new Date()
+      };
+      
+      setChatMessages(prev => [...prev, selectionMessage]);
+      
+      // Simulate execution and response
+      setTimeout(() => {
+        const resultMessage: ChatMessage = {
+          type: 'agent',
+          content: generateDetailedResult(action),
+          timestamp: new Date()
+        };
+        
+        setChatMessages(prev => [...prev, resultMessage]);
+        setSelectedReasoningAction(null);
+      }, 2000);
+    }
+  };
+  
+  // Generate detailed results based on reasoning action category and title
+  const generateDetailedResult = (action: ReasoningAction) => {
+    // Policy verification results
+    if (action.title.includes('Policy') && action.title.includes('Lookup')) {
+      return `I've looked up the policy information and found:\n\n• Policy Number: POL-78294-B\n• Status: Active\n• Type: Whole Life Insurance\n• Coverage Amount: $500,000\n• Premium: $1,249.50 (paid monthly)\n• Start Date: January 15, 2022\n• Beneficiaries: 2 registered\n• Last Payment: May 1, 2025 (current)`;
+    }
+    
+    // Claims API results
+    if (action.title.includes('Claims')) {
+      return `I've checked the claims history and found:\n\n• Total Claims: 1\n• Most Recent Claim: Filed on March 12, 2024\n• Claim Type: Medical Procedure\n• Claim Status: Settled\n• Settlement Amount: $12,450\n• Settlement Date: April 3, 2024\n• Pending Claims: None`;
+    }
+    
+    // Premium calculations
+    if (action.title.includes('Premium') || action.title.includes('Calculator')) {
+      return `I've calculated the premium based on the requested coverage changes:\n\n• Current Premium: $1,249.50/month\n• New Premium: $1,124.20/month\n• Difference: -$125.30/month (-10.03%)\n• Changes Applied: Reduced dependent coverage\n• Effective Date: June 1, 2025\n• Payment Method: Unchanged (Auto-draft)`;
+    }
+    
+    // Generic response for other tools
+    return `I've completed the ${action.title} operation successfully. The results show that everything is in order, and no further action is required at this time.`;
+  };
+  
   const executeAction = (action: AgentAction, inputs: Record<string, string>) => {
     // Add action message
-    const actionMessage = {
-      type: 'action' as const,
+    const actionMessage: ChatMessage = {
+      type: 'action',
       content: `Executing action: ${action.name}${
         Object.keys(inputs).length > 0 
           ? ` with inputs: ${Object.entries(inputs)
@@ -108,8 +191,8 @@ const ActionChat: React.FC<ActionChatProps> = ({
     
     // Simulate action response
     setTimeout(() => {
-      const actionResponse = {
-        type: 'agent' as const,
+      const actionResponse: ChatMessage = {
+        type: 'agent',
         content: `I've completed the "${action.name}" action. Here are the results: ${generateRandomResult(action)}`,
         timestamp: new Date()
       };
@@ -205,6 +288,16 @@ const ActionChat: React.FC<ActionChatProps> = ({
           {/* Messages */}
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
+              {isThinking && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 rounded-lg p-3 border border-gray-200 flex items-center">
+                    <div className="mr-2 bg-neutrinos-blue h-2 w-2 rounded-full animate-pulse"></div>
+                    <div className="mr-2 bg-neutrinos-blue h-2 w-2 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="bg-neutrinos-blue h-2 w-2 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                    <span className="ml-2 text-sm text-gray-600">Thinking...</span>
+                  </div>
+                </div>
+              )}
               {chatMessages.map((message, index) => (
                 <div key={index} className={`flex ${
                   message.type === 'user' ? 'justify-end' : 'justify-start'
@@ -214,9 +307,25 @@ const ActionChat: React.FC<ActionChatProps> = ({
                       ? 'bg-neutrinos-blue text-white' 
                       : message.type === 'action'
                         ? 'bg-purple-100 border border-purple-200'
-                        : 'bg-white border border-gray-200'
+                        : message.type === 'reasoning'
+                          ? 'bg-amber-50 border border-amber-200'
+                          : 'bg-white border border-gray-200'
                   }`}>
-                    <div className="text-sm">{message.content}</div>
+                    {message.type === 'reasoning' && (
+                      <div className="flex items-center mb-2 text-amber-600">
+                        <Brain className="h-4 w-4 mr-1" />
+                        <span className="text-xs font-medium">AGENT REASONING</span>
+                      </div>
+                    )}
+                    <div className="text-sm whitespace-pre-line">{message.content}</div>
+                    {message.reasoningActions && (
+                      <div className="mt-3">
+                        <ReasoningFlow 
+                          actions={message.reasoningActions} 
+                          onActionSelect={handleReasoningActionSelect} 
+                        />
+                      </div>
+                    )}
                     <div className={`text-xs mt-1 ${
                       message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
                     }`}>
