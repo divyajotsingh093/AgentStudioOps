@@ -7,7 +7,9 @@ import { Download, Plus, Menu, X, Home, BarChart, TestTube, FileText, GitBranch,
 import AgentComponentManager, { AgentComponent, ComponentCategory } from '../components/AgentComponentManager';
 import ComponentEditor from '../components/ComponentEditor';
 import AgentActionsView from '../chat/AgentActionsView';
+import AgentCapabilitiesView from '../capabilities/AgentCapabilitiesView';
 import { AgentAction, ActionHistoryItem } from '@/lib/mock-actions';
+import { AgentCapability, RuleDefinition, LogicFlow } from '@/lib/mock-capabilities';
 import { useViewport } from '@/hooks/use-viewport';
 import ResponsiveContainer from '@/components/layout/ResponsiveContainer';
 
@@ -242,6 +244,27 @@ const AgentBuilder: React.FC = () => {
       }
     }
   ];
+  
+  // Handlers for AgentCapabilitiesView
+  const handleCreateCapability = (type: string) => {
+    console.log('Create new capability of type:', type);
+    // Add implementation
+  };
+  
+  const handleExportCapabilities = () => {
+    console.log('Export capabilities');
+    // Add implementation
+  };
+  
+  const handleUseCapability = (capability: AgentCapability | RuleDefinition | LogicFlow) => {
+    console.log('Use capability:', capability);
+    // Add implementation
+  };
+  
+  const handleEditCapability = (capability: AgentCapability | RuleDefinition | LogicFlow) => {
+    console.log('Edit capability:', capability);
+    // Add implementation
+  };
 
   // Navigation items for both mobile and desktop
   const navItems = [
@@ -388,13 +411,11 @@ const AgentBuilder: React.FC = () => {
             </TabsContent>
             
             <TabsContent value="capabilities" className="p-0 flex-1 bg-white rounded-md h-full overflow-hidden">
-              <AgentActionsView
-                availableActions={capabilityActions}
-                actionHistory={actionHistory}
-                onSelectAction={(action) => console.log('Selected action:', action)}
-                onCreateAction={() => handleAddComponent('Capability')}
-                onExportHistory={() => console.log('Export history')}
-                onApprove={(actionId) => console.log('Approve action:', actionId)}
+              <AgentCapabilitiesView 
+                onCreateCapability={handleCreateCapability}
+                onExport={handleExportCapabilities}
+                onUseCapability={handleUseCapability}
+                onEdit={handleEditCapability}
               />
             </TabsContent>
             
