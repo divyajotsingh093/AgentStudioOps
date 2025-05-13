@@ -18,6 +18,7 @@ function Router() {
       <Switch>
         <Route path="/" component={AgentsLanding} />
         <Route path="/agents" component={AgentsLanding} />
+        <Route path="/agents/builder/:id" component={AgentBuilderPage} />
         <Route path="/agents/:id" component={AgentStudio} />
         <Route path="/dashboard" component={RunDashboard} />
         <Route path="/runs/:id" component={RunDetail} />
