@@ -581,6 +581,235 @@ export class MemStorage implements IStorage {
     });
     
     this.currentIssueId = issues.length + 1;
+    
+    // Mock tools
+    const tools = [
+      {
+        name: "Policy Lookup",
+        description: "Retrieves policy information from the core insurance system",
+        type: "API" as const,
+        authType: "ApiKey" as const,
+        status: "Active" as const,
+        version: "1.0.0",
+        endpoint: "https://api.insurance.example/policies",
+        authConfig: {
+          apiKeyName: "x-api-key",
+          apiKeyLocation: "header"
+        },
+        parameters: [
+          {
+            name: "policyNumber",
+            type: "string",
+            required: true,
+            description: "Policy number to look up"
+          },
+          {
+            name: "includeHistory",
+            type: "boolean",
+            required: false,
+            description: "Include policy history"
+          }
+        ],
+        responseSchema: {
+          type: "object",
+          properties: {
+            policyNumber: { type: "string" },
+            holder: { type: "string" },
+            status: { type: "string" },
+            startDate: { type: "string", format: "date" },
+            endDate: { type: "string", format: "date" }
+          }
+        },
+        metadata: {
+          department: "Underwriting",
+          owner: "API Team",
+          usageLimits: { maxRequestsPerMinute: 100 }
+        }
+      },
+      {
+        name: "Risk Calculator",
+        description: "Calculates risk scores based on client data",
+        type: "Function" as const,
+        authType: "None" as const,
+        status: "Active" as const,
+        version: "2.1.0",
+        authConfig: {},
+        parameters: [
+          {
+            name: "age",
+            type: "number",
+            required: true,
+            description: "Client age"
+          },
+          {
+            name: "healthFactors",
+            type: "object",
+            required: true,
+            description: "Health-related risk factors"
+          },
+          {
+            name: "occupationRisk",
+            type: "number",
+            required: false,
+            description: "Occupation risk factor (1-10)"
+          }
+        ],
+        responseSchema: {
+          type: "object",
+          properties: {
+            overallRiskScore: { type: "number" },
+            categoryScores: { 
+              type: "object",
+              properties: {
+                health: { type: "number" },
+                occupation: { type: "number" },
+                lifestyle: { type: "number" }
+              }
+            },
+            recommendations: { type: "array", items: { type: "string" } }
+          }
+        },
+        metadata: {
+          department: "Risk Assessment",
+          owner: "Data Science Team",
+          model: "RiskModel-v3"
+        }
+      },
+      {
+        name: "Fraud Detection",
+        description: "AI-powered fraud detection for claims",
+        type: "Service" as const,
+        authType: "OAuth" as const,
+        status: "Active" as const,
+        version: "1.5.2",
+        endpoint: "https://fraud-detection.insurance.example/analyze",
+        authConfig: {
+          tokenUrl: "https://auth.insurance.example/oauth/token",
+          clientId: "{client_id}",
+          scope: "fraud:detect"
+        },
+        parameters: [
+          {
+            name: "claimData",
+            type: "object",
+            required: true,
+            description: "Full claim data object"
+          },
+          {
+            name: "historical",
+            type: "boolean",
+            required: false,
+            description: "Include historical claims in analysis"
+          }
+        ],
+        responseSchema: {
+          type: "object",
+          properties: {
+            fraudScore: { type: "number" },
+            confidenceLevel: { type: "number" },
+            flaggedItems: { type: "array", items: { type: "string" } },
+            recommendation: { type: "string", enum: ["approve", "review", "deny"] }
+          }
+        },
+        metadata: {
+          department: "Claims",
+          owner: "Fraud Prevention Team",
+          mlModel: "FraudNet-2023",
+          accuracy: 0.96
+        }
+      }
+    ];
+    
+    // Add tools
+    tools.forEach((tool, index) => {
+      const id = index + 1;
+      this.agentTools.set(id, {
+        ...tool,
+        id,
+        createdAt: new Date(Date.now() - Math.floor(Math.random() * 10000000)),
+        updatedAt: new Date(Date.now() - Math.floor(Math.random() * 1000000))
+      });
+      this.currentToolId = id + 1;
+    });
+    
+    // Add some tool executions
+    const executions = [
+      {
+        toolId: 1,
+        runId: 'run-9Y12',
+        status: 'success',
+        input: JSON.stringify({ policyNumber: 'POL-12345', includeHistory: true }),
+        output: JSON.stringify({
+          policyNumber: 'POL-12345',
+          holder: 'John Smith',
+          status: 'active',
+          startDate: '2023-01-15',
+          endDate: '2024-01-14'
+        }),
+        duration: 234,
+        timestamp: new Date(Date.now() - 86400000) // 1 day ago
+      },
+      {
+        toolId: 2,
+        runId: 'run-9Y12',
+        status: 'success',
+        input: JSON.stringify({ 
+          age: 45, 
+          healthFactors: { 
+            smoker: false, 
+            bmi: 28.5, 
+            conditions: ['hypertension'] 
+          },
+          occupationRisk: 3
+        }),
+        output: JSON.stringify({
+          overallRiskScore: 3.8,
+          categoryScores: {
+            health: 4.2,
+            occupation: 3.0,
+            lifestyle: 2.5
+          },
+          recommendations: [
+            "Standard rate with slight increase due to hypertension",
+            "Recommend health monitoring program"
+          ]
+        }),
+        duration: 156,
+        timestamp: new Date(Date.now() - 86000000) // ~1 day ago
+      },
+      {
+        toolId: 3,
+        runId: 'run-7C22',
+        status: 'error',
+        input: JSON.stringify({ 
+          claimData: { 
+            claimNumber: 'CLM-98765',
+            claimantName: 'Alice Jones',
+            claimAmount: 25000,
+            claimDate: '2023-05-10',
+            description: 'Water damage from roof leak'
+          },
+          historical: true
+        }),
+        output: JSON.stringify({
+          error: 'Service unavailable',
+          errorCode: 503,
+          message: 'Fraud detection service is currently unavailable'
+        }),
+        duration: 1503,
+        timestamp: new Date(Date.now() - 43200000) // 12 hours ago
+      }
+    ];
+    
+    // Add executions
+    executions.forEach((execution, index) => {
+      const id = index + 1;
+      this.toolExecutions.set(id, {
+        ...execution,
+        id
+      });
+      this.currentToolExecutionId = id + 1;
+    });
   }
 }
 
