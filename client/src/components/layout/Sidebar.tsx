@@ -10,6 +10,7 @@ import {
   Settings,
   LucideIcon
 } from "lucide-react";
+import Logo from "../ui/logo";
 
 interface SidebarItemProps {
   href: string;
@@ -50,10 +51,10 @@ const Sidebar = () => {
   return (
     <aside className="bg-white w-16 md:w-64 border-r border-gray-200 flex flex-col h-full">
       <div className="p-4 border-b border-gray-200 flex items-center justify-center md:justify-start">
-        <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
+        <Logo size="sm" className="hidden md:flex" />
+        <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center md:hidden">
           <Bot className="h-5 w-5 text-white" />
         </div>
-        <span className="hidden md:block ml-3 font-semibold text-lg">Neutrinos</span>
       </div>
       
       <nav className="flex-grow">

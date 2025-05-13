@@ -3,6 +3,7 @@ import { useParams } from "wouter";
 import StudioHeader from "@/components/studio/StudioHeader";
 import StudioSidebar from "@/components/studio/StudioSidebar";
 import StudioMain from "@/components/studio/StudioMain";
+import AppHeader from "@/components/layout/AppHeader";
 import AgentOverview from "@/components/agents/builder/AgentOverview";
 import AgentMetrics from "@/components/agents/builder/AgentMetrics";
 import AgentEvalQA from "@/components/agents/builder/AgentEvalQA";
