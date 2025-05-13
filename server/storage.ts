@@ -7,6 +7,8 @@ import {
   dataSources, type DataSource, type InsertDataSource, type UpdateDataSource,
   dataConnectors, type DataConnector, type InsertDataConnector, type UpdateDataConnector,
   dataPermissions, type DataPermission, type InsertDataPermission,
+  agentTools, type AgentTool, type InsertAgentTool, type UpdateAgentTool,
+  toolExecutions, type ToolExecution, type InsertToolExecution
 } from "@shared/schema";
 import { db } from './db';
 import { eq } from 'drizzle-orm';
@@ -60,6 +62,18 @@ export interface IStorage {
   getDataPermissions(dataSourceId: number): Promise<DataPermission[]>;
   createDataPermission(permission: InsertDataPermission): Promise<DataPermission>;
   deleteDataPermission(id: number): Promise<boolean>;
+  
+  // Tool Integration methods
+  getTools(): Promise<AgentTool[]>;
+  getToolById(id: number): Promise<AgentTool | undefined>;
+  createTool(tool: InsertAgentTool): Promise<AgentTool>;
+  updateTool(id: number, tool: UpdateAgentTool): Promise<AgentTool | undefined>;
+  deleteTool(id: number): Promise<boolean>;
+  
+  // Tool Execution methods
+  getToolExecutions(toolId?: number, runId?: string): Promise<ToolExecution[]>;
+  createToolExecution(execution: InsertToolExecution): Promise<ToolExecution>;
+  getToolExecutionById(id: number): Promise<ToolExecution | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -71,12 +85,16 @@ export class MemStorage implements IStorage {
   private dataSources: Map<number, DataSource>;
   private dataConnectors: Map<number, DataConnector>;
   private dataPermissions: Map<number, DataPermission>;
+  private agentTools: Map<number, AgentTool>;
+  private toolExecutions: Map<number, ToolExecution>;
   private currentUserId: number;
   private currentIssueId: number;
   private currentComponentId: number;
   private currentDataSourceId: number;
   private currentDataConnectorId: number;
   private currentDataPermissionId: number;
+  private currentToolId: number;
+  private currentToolExecutionId: number;
 
   constructor() {
     this.users = new Map();
@@ -87,12 +105,16 @@ export class MemStorage implements IStorage {
     this.dataSources = new Map();
     this.dataConnectors = new Map();
     this.dataPermissions = new Map();
+    this.agentTools = new Map();
+    this.toolExecutions = new Map();
     this.currentUserId = 1;
     this.currentIssueId = 1;
     this.currentComponentId = 1;
     this.currentDataSourceId = 1;
     this.currentDataConnectorId = 1;
     this.currentDataPermissionId = 1;
+    this.currentToolId = 1;
+    this.currentToolExecutionId = 1;
     
     // Initialize with mock data
     this.initializeMockData();

@@ -187,3 +187,49 @@ export type InsertDataConnector = z.infer<typeof insertDataConnectorSchema>;
 export type UpdateDataConnector = z.infer<typeof updateDataConnectorSchema>;
 export type DataPermission = typeof dataPermissions.$inferSelect;
 export type InsertDataPermission = z.infer<typeof insertDataPermissionSchema>;
+
+// Tool Integration Schemas
+export const toolStatusEnum = z.enum(['Active', 'Inactive', 'Draft', 'Deprecated']);
+export const toolTypeEnum = z.enum(['API', 'Function', 'Service', 'Integration', 'Custom']);
+export const toolAuthTypeEnum = z.enum(['None', 'ApiKey', 'OAuth', 'Basic', 'Custom']);
+
+export const agentTools = pgTable("agent_tools", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(),
+  status: text("status").notNull().default('Active'),
+  version: text("version").notNull().default('1.0.0'),
+  endpoint: text("endpoint"),
+  authType: text("auth_type").notNull().default('None'),
+  authConfig: json("auth_config").default({}),
+  parameters: json("parameters").default([]),
+  responseSchema: json("response_schema").default({}),
+  metadata: json("metadata").default({}),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const toolExecutions = pgTable("tool_executions", {
+  id: serial("id").primaryKey(),
+  toolId: integer("tool_id").references(() => agentTools.id),
+  runId: text("run_id").references(() => runs.id),
+  agentId: text("agent_id").references(() => agents.id),
+  requestPayload: json("request_payload"),
+  responsePayload: json("response_payload"),
+  status: text("status").notNull(),
+  errorMessage: text("error_message"),
+  latency: integer("latency"),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+});
+
+export const insertToolSchema = createInsertSchema(agentTools);
+export const updateToolSchema = createSelectSchema(agentTools);
+export const insertToolExecutionSchema = createInsertSchema(toolExecutions);
+
+export type AgentTool = typeof agentTools.$inferSelect;
+export type InsertAgentTool = z.infer<typeof insertToolSchema>;
+export type UpdateAgentTool = z.infer<typeof updateToolSchema>;
+export type ToolExecution = typeof toolExecutions.$inferSelect;
+export type InsertToolExecution = z.infer<typeof insertToolExecutionSchema>;
