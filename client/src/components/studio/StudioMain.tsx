@@ -33,6 +33,16 @@ const StudioMain = ({
       <div className="bg-white border-b border-gray-200 p-2 flex">
         <button 
           className={`px-3 py-1 rounded-md text-sm font-medium mr-2 ${
+            activeView === 'enhanced' 
+              ? 'bg-primary text-white' 
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+          onClick={() => setActiveView('enhanced')}
+        >
+          Enhanced Chat
+        </button>
+        <button 
+          className={`px-3 py-1 rounded-md text-sm font-medium mr-2 ${
             activeView === 'actions' 
               ? 'bg-primary text-white' 
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
