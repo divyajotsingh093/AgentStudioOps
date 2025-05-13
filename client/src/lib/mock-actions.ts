@@ -1,6 +1,27 @@
 // Mock data for agent actions and action history
 
-export const availableActions = [
+// Define the types to match AgentActionsView component interfaces
+export interface AgentAction {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  status?: 'available' | 'restricted';
+  tags?: string[];
+  configuration?: Record<string, any>;
+}
+
+export interface ActionHistoryItem {
+  id: string;
+  type: string;
+  title: string;
+  timestamp: Date;
+  status?: 'success' | 'warning' | 'error' | 'pending';
+  metadata?: Record<string, any>;
+  confidence?: number;
+}
+
+export const availableActions: AgentAction[] = [
   {
     id: 'action-1',
     name: 'Issue Policy',
@@ -47,7 +68,7 @@ export const availableActions = [
   }
 ];
 
-export const actionHistory = [
+export const actionHistory: ActionHistoryItem[] = [
   {
     id: 'history-1',
     type: 'Risk Assessment',

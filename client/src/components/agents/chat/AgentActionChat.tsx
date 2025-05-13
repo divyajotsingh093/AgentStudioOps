@@ -72,12 +72,12 @@ const AgentActionChat: React.FC<AgentActionChatProps> = ({
         {/* Left Panel: Chat and Actions */}
         <ResizablePanel defaultSize={70} minSize={50}>
           <ResizablePanelGroup direction="vertical">
-            <ResizablePanel defaultSize={30}>
+            <ResizablePanel defaultSize={20} minSize={15} maxSize={25}>
               <div className="flex h-full">
-                <div className="w-1/2 border-r">
+                <div className="w-1/2 border-r overflow-auto">
                   <AvailableActions onActionSelect={handleActionSelect} />
                 </div>
-                <div className="w-1/2">
+                <div className="w-1/2 overflow-auto">
                   <ActionHistory />
                 </div>
               </div>
@@ -85,7 +85,7 @@ const AgentActionChat: React.FC<AgentActionChatProps> = ({
             
             <ResizableHandle withHandle />
             
-            <ResizablePanel defaultSize={70}>
+            <ResizablePanel defaultSize={80} minSize={60}>
               <ActionableChat 
                 messages={messages} 
                 reasoningTraces={reasoningTraces}
