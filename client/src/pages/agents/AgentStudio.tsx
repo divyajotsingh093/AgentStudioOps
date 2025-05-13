@@ -3,6 +3,7 @@ import { useParams } from "wouter";
 import StudioHeader from "@/components/studio/StudioHeader";
 import StudioSidebar from "@/components/studio/StudioSidebar";
 import StudioMain from "@/components/studio/StudioMain";
+import CollaborationPanel from "@/components/studio/CollaborationPanel";
 import AppHeader from "@/components/layout/AppHeader";
 import { Badge } from "@/components/ui/badge";
 import AgentOverview from "@/components/agents/builder/AgentOverview";
@@ -23,6 +24,7 @@ const AgentStudio = () => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [messages, setMessages] = useState<ChatMessage[]>(chatMessages);
   const [selectedPrompt, setSelectedPrompt] = useState<PromptItem | null>(null);
+  const [collaborationPanelOpen, setCollaborationPanelOpen] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {

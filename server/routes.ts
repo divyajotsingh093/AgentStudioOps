@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from 'ws';
 import { storage } from "./storage";
 import { 
   agents, runs, issueSchema, governanceIssueSchema, 
@@ -10,6 +11,55 @@ import {
   insertDataPermissionSchema
 } from "@shared/schema";
 import { z } from "zod";
+
+// Collaborative editing types
+interface CollaborationSession {
+  agentId: string;
+  clients: Map<string, WebSocket>;
+  lastModified: Date;
+  activeUsers: Map<string, {
+    username: string;
+    cursorPosition?: {
+      componentId: number;
+      position: number;
+    };
+    color: string;
+  }>;
+  changes: Array<{
+    id: string;
+    type: 'component_update' | 'component_create' | 'component_delete' | 'agent_update';
+    data: any;
+    userId: string;
+    timestamp: Date;
+  }>;
+}
+
+// Store active collaboration sessions
+const collaborationSessions = new Map<string, CollaborationSession>();
+
+// Generate random colors for users
+function generateUserColor(): string {
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#FFD166', '#06D6A0', '#118AB2', 
+    '#073B4C', '#6F2DBD', '#8338EC', '#3A86FF', '#FB5607'
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// Broadcast to all clients in a session except sender
+function broadcastToSession(
+  session: CollaborationSession, 
+  message: any, 
+  excludeClientId?: string
+) {
+  const messageStr = JSON.stringify(message);
+  
+  for (const [clientId, client] of session.clients.entries()) {
+    if (excludeClientId !== clientId && client.readyState === WebSocket.OPEN) {
+      client.send(messageStr);
+    }
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes for the AI agent platform
@@ -438,5 +488,273 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Set up WebSocket server for real-time collaboration
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  wss.on('connection', (ws) => {
+    console.log('New WebSocket connection established');
+    
+    let userId: string | null = null;
+    let userName: string | null = null;
+    let currentSession: CollaborationSession | null = null;
+    
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        console.log(`Received WebSocket message type: ${data.type}`);
+        
+        switch(data.type) {
+          case 'join_session': {
+            // Client joining a collaborative session
+            userId = data.userId;
+            userName = data.userName || `User-${userId.slice(0, 4)}`;
+            const agentId = data.agentId;
+            
+            // Create or get session
+            if (!collaborationSessions.has(agentId)) {
+              console.log(`Creating new collaborative session for agent ${agentId}`);
+              collaborationSessions.set(agentId, {
+                agentId,
+                clients: new Map(),
+                lastModified: new Date(),
+                activeUsers: new Map(),
+                changes: []
+              });
+            }
+            
+            currentSession = collaborationSessions.get(agentId)!;
+            currentSession.clients.set(userId, ws);
+            
+            // Add user to active users with a random color
+            const userColor = generateUserColor();
+            currentSession.activeUsers.set(userId, {
+              username: userName,
+              color: userColor
+            });
+            
+            // Send current session state to the new user
+            const activeUsers = Array.from(currentSession.activeUsers.entries()).map(
+              ([id, user]) => ({
+                id,
+                username: user.username,
+                color: user.color,
+                cursorPosition: user.cursorPosition
+              })
+            );
+            
+            ws.send(JSON.stringify({
+              type: 'session_joined',
+              agentId,
+              userId,
+              users: activeUsers,
+              recentChanges: currentSession.changes.slice(-50) // Send last 50 changes
+            }));
+            
+            // Notify other clients about the new user
+            broadcastToSession(currentSession, {
+              type: 'user_joined',
+              userId,
+              username: userName,
+              color: userColor
+            }, userId);
+            
+            console.log(`User ${userName} (${userId}) joined session for agent ${agentId}`);
+            break;
+          }
+          
+          case 'leave_session': {
+            if (currentSession && userId) {
+              currentSession.clients.delete(userId);
+              currentSession.activeUsers.delete(userId);
+              
+              // Notify other clients
+              broadcastToSession(currentSession, {
+                type: 'user_left',
+                userId
+              });
+              
+              console.log(`User ${userName} (${userId}) left session for agent ${currentSession.agentId}`);
+              
+              // Clean up session if empty
+              if (currentSession.clients.size === 0) {
+                collaborationSessions.delete(currentSession.agentId);
+                console.log(`Removed empty session for agent ${currentSession.agentId}`);
+              }
+              
+              currentSession = null;
+              userId = null;
+              userName = null;
+            }
+            break;
+          }
+          
+          case 'component_update': {
+            if (currentSession && userId) {
+              const changeId = `change-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+              const change = {
+                id: changeId,
+                type: 'component_update' as const,
+                data: data.component,
+                userId,
+                timestamp: new Date()
+              };
+              
+              // Add to change history
+              currentSession.changes.push(change);
+              currentSession.lastModified = new Date();
+              
+              // Broadcast to other clients
+              broadcastToSession(currentSession, {
+                type: 'component_updated',
+                change,
+                userId
+              }, userId);
+              
+              console.log(`User ${userName} updated component ${data.component.id}`);
+            }
+            break;
+          }
+          
+          case 'component_create': {
+            if (currentSession && userId) {
+              const changeId = `change-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+              const change = {
+                id: changeId,
+                type: 'component_create' as const,
+                data: data.component,
+                userId,
+                timestamp: new Date()
+              };
+              
+              // Add to change history
+              currentSession.changes.push(change);
+              currentSession.lastModified = new Date();
+              
+              // Broadcast to other clients
+              broadcastToSession(currentSession, {
+                type: 'component_created',
+                change,
+                userId
+              }, userId);
+              
+              console.log(`User ${userName} created new component`);
+            }
+            break;
+          }
+          
+          case 'component_delete': {
+            if (currentSession && userId) {
+              const changeId = `change-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+              const change = {
+                id: changeId,
+                type: 'component_delete' as const,
+                data: { 
+                  componentId: data.componentId 
+                },
+                userId,
+                timestamp: new Date()
+              };
+              
+              // Add to change history
+              currentSession.changes.push(change);
+              currentSession.lastModified = new Date();
+              
+              // Broadcast to other clients
+              broadcastToSession(currentSession, {
+                type: 'component_deleted',
+                change,
+                userId
+              }, userId);
+              
+              console.log(`User ${userName} deleted component ${data.componentId}`);
+            }
+            break;
+          }
+          
+          case 'cursor_update': {
+            if (currentSession && userId) {
+              // Update user's cursor position
+              const user = currentSession.activeUsers.get(userId);
+              if (user) {
+                user.cursorPosition = data.position;
+                currentSession.activeUsers.set(userId, user);
+                
+                // Broadcast to other clients
+                broadcastToSession(currentSession, {
+                  type: 'cursor_updated',
+                  userId,
+                  position: data.position
+                }, userId);
+              }
+            }
+            break;
+          }
+        }
+        
+      } catch (err) {
+        console.error('Error processing WebSocket message:', err);
+      }
+    });
+    
+    ws.on('close', () => {
+      // Handle disconnection
+      if (currentSession && userId) {
+        currentSession.clients.delete(userId);
+        currentSession.activeUsers.delete(userId);
+        
+        // Notify other clients
+        broadcastToSession(currentSession, {
+          type: 'user_left',
+          userId
+        });
+        
+        console.log(`User ${userName} (${userId}) disconnected from session for agent ${currentSession.agentId}`);
+        
+        // Clean up session if empty
+        if (currentSession.clients.size === 0) {
+          collaborationSessions.delete(currentSession.agentId);
+          console.log(`Removed empty session for agent ${currentSession.agentId}`);
+        }
+      }
+    });
+  });
+  
+  // Add API endpoints for collaboration information
+  app.get('/api/collaboration/sessions', (req, res) => {
+    const sessionInfo = Array.from(collaborationSessions.entries()).map(([agentId, session]) => ({
+      agentId,
+      userCount: session.activeUsers.size,
+      lastModified: session.lastModified,
+      changeCount: session.changes.length
+    }));
+    
+    res.json(sessionInfo);
+  });
+  
+  app.get('/api/collaboration/sessions/:agentId', (req, res) => {
+    const agentId = req.params.agentId;
+    const session = collaborationSessions.get(agentId);
+    
+    if (!session) {
+      return res.status(404).json({ message: 'No active collaboration session for this agent' });
+    }
+    
+    const users = Array.from(session.activeUsers.entries()).map(([userId, user]) => ({
+      userId,
+      username: user.username,
+      color: user.color,
+      hasActiveCursor: !!user.cursorPosition
+    }));
+    
+    res.json({
+      agentId,
+      userCount: session.activeUsers.size,
+      lastModified: session.lastModified,
+      changeCount: session.changes.length,
+      users
+    });
+  });
+  
   return httpServer;
 }
