@@ -253,6 +253,16 @@ const ActionChat: React.FC<ActionChatProps> = ({
     });
   };
   
+  // Format message content to handle newlines properly
+  const formatMessageContent = (content: string) => {
+    return content.split('\n').map((line, i) => (
+      <React.Fragment key={i}>
+        {line}
+        {i < content.split('\n').length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
+  
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
@@ -317,7 +327,7 @@ const ActionChat: React.FC<ActionChatProps> = ({
                         <span className="text-xs font-medium">AGENT REASONING</span>
                       </div>
                     )}
-                    <div className="text-sm whitespace-pre-line">{message.content}</div>
+                    <div className="text-sm">{formatMessageContent(message.content)}</div>
                     {message.reasoningActions && (
                       <div className="mt-3">
                         <ReasoningFlow 

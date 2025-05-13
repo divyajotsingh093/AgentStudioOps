@@ -15,12 +15,15 @@ interface ReasoningFlowProps {
   onActionSelect: (action: ReasoningAction) => void;
 }
 
-const ReasoningFlow: React.FC<ReasoningFlowProps> = ({ actions, onActionSelect }) => {
+const ReasoningFlow: React.FC<ReasoningFlowProps> = ({ actions = [], onActionSelect }) => {
+  // Ensure actions is an array
+  const actionsArray = Array.isArray(actions) ? actions : [];
+  
   // Group actions by category
-  const reasoningActions = actions.filter(a => a.category === 'Reasoning');
-  const toolActions = actions.filter(a => a.category === 'Tool');
-  const apiActions = actions.filter(a => a.category === 'API');
-  const otherActions = actions.filter(a => !['Reasoning', 'Tool', 'API'].includes(a.category));
+  const reasoningActions = actionsArray.filter(a => a?.category === 'Reasoning');
+  const toolActions = actionsArray.filter(a => a?.category === 'Tool');
+  const apiActions = actionsArray.filter(a => a?.category === 'API');
+  const otherActions = actionsArray.filter(a => a?.category && !['Reasoning', 'Tool', 'API'].includes(a.category));
 
   return (
     <div className="space-y-4 py-2">
