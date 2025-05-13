@@ -14,7 +14,8 @@ import {
   LucideIcon,
   ChevronRight,
   Menu,
-  X
+  X,
+  Wrench
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -145,6 +146,7 @@ const DesktopSidebar = ({ isActive, collapsed = false, onToggleCollapse }: Deskt
         <SidebarItem href="/governance" icon={Shield} label="Governance" active={isActive("/governance")} collapsed={collapsed} />
         <SidebarItem href="/data-sources" icon={Database} label="Data Sources" active={isActive("/data-sources")} collapsed={collapsed} />
         <SidebarItem href="/data-fabric" icon={CircuitBoard} label="Data Fabric" active={isActive("/data-fabric")} collapsed={collapsed} />
+        <SidebarItem href="/tools" icon={Wrench} label="Tools" active={isActive("/tools")} collapsed={collapsed} />
         <SidebarItem href="/settings" icon={Settings} label="Settings" active={isActive("/settings")} collapsed={collapsed} />
       </ul>
     </nav>
@@ -196,6 +198,7 @@ const MobileSidebar = ({ isActive, isOpen, onClose }: MobileSidebarProps) => (
             <SidebarItem href="/governance" icon={Shield} label="Governance" active={isActive("/governance")} onClick={onClose} />
             <SidebarItem href="/data-sources" icon={Database} label="Data Sources" active={isActive("/data-sources")} onClick={onClose} />
             <SidebarItem href="/data-fabric" icon={CircuitBoard} label="Data Fabric" active={isActive("/data-fabric")} onClick={onClose} />
+            <SidebarItem href="/tools" icon={Wrench} label="Tools" active={isActive("/tools")} onClick={onClose} />
             
             <Separator className="my-3" />
             

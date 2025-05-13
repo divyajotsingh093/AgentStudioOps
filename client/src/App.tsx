@@ -44,6 +44,10 @@ function Router() {
         <Route path="/data-fabric/models" component={DataModelsIndex} />
         <Route path="/data-fabric/policies" component={DataPoliciesIndex} />
         
+        {/* Tools */}
+        <Route path="/tools" component={() => <h1>Tools Page</h1>} />
+        <Route path="/tools/:id" component={() => <h1>Tool Detail Page</h1>} />
+        
         <Route component={NotFound} />
       </Switch>
     </MainLayout>
