@@ -345,10 +345,20 @@ const AgentBuilder: React.FC = () => {
         </div>
         <div className="flex items-center gap-2 md:gap-3">
           {!isMobile && (
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-1" />
-              Export
-            </Button>
+            <>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.location.href = '/agents/components'}
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                Component Models
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-1" />
+                Export
+              </Button>
+            </>
           )}
           <Button 
             className="bg-neutrinos-blue hover:bg-neutrinos-blue/90"

@@ -8,6 +8,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import AgentsLanding from "@/pages/agents/AgentsLanding";
 import AgentStudio from "@/pages/agents/AgentStudio";
 import AgentBuilderPage from "@/pages/agents/AgentBuilderPage";
+import AgentComponentsPage from "@/pages/agents/components/AgentComponentsPage";
 import RunDashboard from "@/pages/dashboard/RunDashboard";
 import RunDetail from "@/pages/runs/RunDetail";
 import GovernanceLog from "@/pages/governance/GovernanceLog";
@@ -19,6 +20,7 @@ function Router() {
         <Route path="/" component={AgentsLanding} />
         <Route path="/agents" component={AgentsLanding} />
         <Route path="/agents/builder/:id" component={AgentBuilderPage} />
+        <Route path="/agents/components" component={AgentComponentsPage} />
         <Route path="/agents/:id" component={AgentStudio} />
         <Route path="/dashboard" component={RunDashboard} />
         <Route path="/runs/:id" component={RunDetail} />
