@@ -49,14 +49,17 @@ const initialComponents: AgentComponent[] = [
     }
   },
   {
-    id: 'comp-4',
-    name: 'Rules Engine',
+    id: 'model-rule-1',
+    name: 'Medical Underwriting Rules',
     category: 'Tools',
-    description: 'Apply business rules to underwriting decisions',
+    type: 'Medical Underwriting',
+    description: 'Advanced rule-based system for evaluating medical risks',
     status: 'Available',
     details: {
-      'Rules Set': 'UW-2023',
-      'Categories': 'Medical, Financial, Risk'
+      'Rules Count': '25',
+      'Accuracy': '97.8%',
+      'Version': '3.2.1',
+      'Last Updated': 'Apr 15, 2025'
     }
   },
   {
