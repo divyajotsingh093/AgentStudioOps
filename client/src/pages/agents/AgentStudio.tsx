@@ -115,6 +115,7 @@ const AgentStudio = () => {
         agentType={agent.type[0]}
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        onToggleCollaboration={toggleCollaborationPanel}
       />
       
       {/* Collaboration Panel */}
