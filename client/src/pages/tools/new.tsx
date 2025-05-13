@@ -19,7 +19,7 @@ const NewToolPage: React.FC = () => {
     mutationFn: async (data: FormValues) => {
       return apiRequest('/api/tools', {
         method: 'POST',
-        data,
+        data: data,
       });
     },
     onSuccess: () => {

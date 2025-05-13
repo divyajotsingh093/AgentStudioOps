@@ -41,6 +41,7 @@ const ToolsPage: React.FC = () => {
     mutationFn: async (id: number) => {
       return apiRequest(`/api/tools/${id}`, {
         method: 'DELETE',
+        data: {}
       });
     },
     onSuccess: () => {
