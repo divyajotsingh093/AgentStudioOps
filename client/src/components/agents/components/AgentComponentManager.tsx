@@ -119,43 +119,45 @@ const AgentComponentManager: React.FC<AgentComponentManagerProps> = ({
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 md:gap-4">
               {categoryComponents.map(component => (
-                <Card key={component.id} className="overflow-hidden border-l-4 border-l-neutrinos-blue">
-                  <CardHeader className="p-4 pb-2">
-                    <div className="flex justify-between items-start">
+                <Card key={component.id} className="overflow-hidden border-l-4 border-l-neutrinos-blue transition-all hover:shadow-md">
+                  <CardHeader className="p-3 md:p-4 pb-1 md:pb-2">
+                    <div className="flex justify-between items-start flex-wrap">
                       <CardTitle className="text-md font-semibold">{component.name}</CardTitle>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 md:gap-2 mt-1 md:mt-0">
                         {renderStatusBadge(component.status)}
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-8 w-8 p-0" 
+                          className="h-7 w-7 md:h-8 md:w-8 p-0" 
                           onClick={() => onEditComponent(component)}
                         >
-                          <Edit className="h-4 w-4 text-gray-500" />
+                          <Edit className="h-3 w-3 md:h-4 md:w-4 text-gray-500" />
                         </Button>
                       </div>
                     </div>
-                    <CardDescription className="text-sm">
+                    <CardDescription className="text-xs md:text-sm mt-1">
                       {component.description}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-4 pt-0 pb-2">
+                  <CardContent className="p-3 md:p-4 pt-0 md:pt-0 pb-1 md:pb-2">
                     {component.details && (
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-gray-500 overflow-hidden">
                         {Object.entries(component.details).map(([key, value]) => (
-                          <p key={key}>{key}: {value}</p>
+                          <p key={key} className="truncate">
+                            <span className="font-medium">{key}:</span> {value}
+                          </p>
                         ))}
                       </div>
                     )}
                   </CardContent>
                   {component.category === 'Capability' && (
-                    <CardFooter className="p-4 pt-2 flex justify-end">
+                    <CardFooter className="p-3 md:p-4 pt-1 md:pt-2 flex justify-end">
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="text-neutrinos-blue hover:text-neutrinos-blue/90 hover:bg-blue-50"
+                        className="text-neutrinos-blue hover:text-neutrinos-blue/90 hover:bg-blue-50 text-xs md:text-sm"
                         onClick={() => onUseComponent(component)}
                       >
                         <ArrowUpRight className="h-3 w-3 mr-1" />

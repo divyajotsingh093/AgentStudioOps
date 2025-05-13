@@ -3,11 +3,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Plus } from 'lucide-react';
+import { Download, Plus, Menu, X, Home, BarChart, TestTube, FileText, GitBranch, Wrench, Settings } from 'lucide-react';
 import AgentComponentManager, { AgentComponent, ComponentCategory } from '../components/AgentComponentManager';
 import ComponentEditor from '../components/ComponentEditor';
 import AgentActionsView from '../chat/AgentActionsView';
 import { AgentAction, ActionHistoryItem } from '@/lib/mock-actions';
+import { useViewport } from '@/hooks/use-viewport';
+import ResponsiveContainer from '@/components/layout/ResponsiveContainer';
 
 // Initial mock data for components
 const initialComponents: AgentComponent[] = [
@@ -176,11 +178,13 @@ const convertToAgentActions = (components: AgentComponent[]): AgentAction[] => {
 };
 
 const AgentBuilder: React.FC = () => {
+  const { isMobile, isTablet, screenSize } = useViewport();
   const [components, setComponents] = useState<AgentComponent[]>(initialComponents);
   const [activeTab, setActiveTab] = useState('components');
   const [editComponent, setEditComponent] = useState<AgentComponent | undefined>(undefined);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [newComponentCategory, setNewComponentCategory] = useState<ComponentCategory | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Actions for component management
   const handleEditComponent = (component: AgentComponent) => {
@@ -239,122 +243,198 @@ const AgentBuilder: React.FC = () => {
     }
   ];
 
+  // Navigation items for both mobile and desktop
+  const navItems = [
+    { name: 'Overview', icon: <Home className="h-4 w-4" />, active: false },
+    { name: 'Build', icon: <Plus className="h-4 w-4" />, active: true },
+    { name: 'Metrics', icon: <BarChart className="h-4 w-4" />, active: false },
+    { name: 'Eval', icon: <TestTube className="h-4 w-4" />, active: false },
+    { name: 'Policy', icon: <FileText className="h-4 w-4" />, active: false },
+    { name: 'Versions', icon: <GitBranch className="h-4 w-4" />, active: false },
+    { name: 'Lineage', icon: <GitBranch className="h-4 w-4" />, active: false },
+    { name: 'Tools', icon: <Wrench className="h-4 w-4" />, active: false },
+    { name: 'Settings', icon: <Settings className="h-4 w-4" />, active: false },
+  ];
+
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b flex justify-between items-center bg-white">
-        <h1 className="text-xl font-semibold">Accelerated UW Agent</h1>
-        <div className="flex items-center gap-3">
-          <Badge className="bg-blue-100 text-blue-800">UW</Badge>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-1" />
-            Export
-          </Button>
-          <Button className="bg-neutrinos-blue hover:bg-neutrinos-blue/90">
+      {/* Header - Adaptive to screen size */}
+      <div className="p-3 md:p-4 border-b flex justify-between items-center bg-white">
+        <div className="flex items-center">
+          {isMobile && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="mr-2 p-1" 
+              onClick={() => setMobileNavOpen(!mobileNavOpen)}
+            >
+              {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          )}
+          <h1 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold flex items-center`}>
+            Accelerated UW Agent
+            <Badge className="ml-2 bg-blue-100 text-blue-800">UW</Badge>
+          </h1>
+        </div>
+        <div className="flex items-center gap-2 md:gap-3">
+          {!isMobile && (
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-1" />
+              Export
+            </Button>
+          )}
+          <Button 
+            className="bg-neutrinos-blue hover:bg-neutrinos-blue/90"
+            size={isMobile ? "sm" : "default"}
+          >
             Deploy
           </Button>
         </div>
       </div>
       
-      <div className="p-4 border-b bg-white">
-        <div className="flex space-x-4">
-          <Button variant="ghost" className="text-gray-500">
-            Overview
-          </Button>
-          <Button variant="ghost" className="text-neutrinos-blue font-medium border-b-2 border-neutrinos-blue">
-            Build
-          </Button>
-          <Button variant="ghost" className="text-gray-500">
-            Metrics
-          </Button>
-          <Button variant="ghost" className="text-gray-500">
-            Eval
-          </Button>
-          <Button variant="ghost" className="text-gray-500">
-            Policy
-          </Button>
-          <Button variant="ghost" className="text-gray-500">
-            Versions
-          </Button>
-          <Button variant="ghost" className="text-gray-500">
-            Lineage
-          </Button>
-          <Button variant="ghost" className="text-gray-500">
-            Tools
-          </Button>
-          <Button variant="ghost" className="text-gray-500">
-            Settings
-          </Button>
+      {/* Mobile Navigation Drawer */}
+      {isMobile && mobileNavOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setMobileNavOpen(false)}>
+          <div 
+            className="bg-white h-full w-64 p-4 overflow-y-auto" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            {navItems.map((item, index) => (
+              <Button 
+                key={index}
+                variant="ghost" 
+                className={`w-full justify-start mb-1 ${item.active ? 'text-neutrinos-blue font-medium' : 'text-gray-600'}`}
+              >
+                {item.icon}
+                <span className="ml-2">{item.name}</span>
+              </Button>
+            ))}
+          </div>
         </div>
+      )}
+      
+      {/* Desktop Navigation */}
+      <div className={`border-b bg-white ${isMobile ? 'hidden' : 'block'}`}>
+        <ResponsiveContainer>
+          <div className="flex flex-wrap py-2">
+            {navItems.map((item, index) => (
+              <Button 
+                key={index}
+                variant="ghost" 
+                className={`${item.active 
+                  ? 'text-neutrinos-blue font-medium border-b-2 border-neutrinos-blue' 
+                  : 'text-gray-500'}`}
+              >
+                {isTablet && item.icon}
+                <span className={isTablet ? "ml-1" : ""}>{item.name}</span>
+              </Button>
+            ))}
+          </div>
+        </ResponsiveContainer>
       </div>
       
-      <div className="p-4 bg-gray-50">
-        <h2 className="text-lg font-semibold mb-4">Agent Components</h2>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="components">Components</TabsTrigger>
-            <TabsTrigger value="capabilities">Agent Capabilities</TabsTrigger>
-            <TabsTrigger value="chat">Action Chat</TabsTrigger>
-            <TabsTrigger value="enhanced-chat">Enhanced Chat</TabsTrigger>
-            <TabsTrigger value="flow">Flow View</TabsTrigger>
-          </TabsList>
+      <div className="p-3 md:p-4 bg-gray-50 flex-1 overflow-hidden">
+        <ResponsiveContainer>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold`}>Agent Components</h2>
+            {isMobile && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-1"
+              >
+                <Download className="h-3 w-3" />
+                <span className="text-xs">Export</span>
+              </Button>
+            )}
+          </div>
           
-          <TabsContent value="components" className="flex-1">
-            <AgentComponentManager 
-              components={components}
-              onEditComponent={handleEditComponent}
-              onAddComponent={handleAddComponent}
-              onUseComponent={handleUseComponent}
-            />
-          </TabsContent>
-          
-          <TabsContent value="capabilities" className="p-0 flex-1 bg-white rounded-md">
-            <AgentActionsView
-              availableActions={capabilityActions}
-              actionHistory={actionHistory}
-              onSelectAction={(action) => console.log('Selected action:', action)}
-              onCreateAction={() => handleAddComponent('Capability')}
-              onExportHistory={() => console.log('Export history')}
-              onApprove={(actionId) => console.log('Approve action:', actionId)}
-            />
-          </TabsContent>
-          
-          <TabsContent value="chat">
-            <div className="h-[500px] flex items-center justify-center bg-white rounded-md">
-              <div className="text-center">
-                <h3 className="text-lg font-medium mb-2">Action Chat</h3>
-                <p className="text-gray-500 mb-4">Interactive chat interface with agent actions</p>
-                <Button className="bg-neutrinos-blue hover:bg-neutrinos-blue/90">
-                  Open Chat
-                </Button>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-4 grid" style={{ 
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)'
+            }}>
+              <TabsTrigger value="components" className={isMobile ? 'text-xs py-1 px-2' : ''}>
+                {isMobile ? 'Components' : 'Agent Components'}
+              </TabsTrigger>
+              <TabsTrigger value="capabilities" className={isMobile ? 'text-xs py-1 px-2' : ''}>
+                {isMobile ? 'Capabilities' : 'Agent Capabilities'}
+              </TabsTrigger>
+              {(!isMobile || activeTab === 'chat') && (
+                <TabsTrigger value="chat" className={isMobile ? 'text-xs py-1 px-2' : ''}>
+                  Action Chat
+                </TabsTrigger>
+              )}
+              {(!isMobile || activeTab === 'enhanced-chat') && (
+                <TabsTrigger value="enhanced-chat" className={isMobile ? 'text-xs py-1 px-2' : ''}>
+                  Enhanced Chat
+                </TabsTrigger>
+              )}
+              {(!isMobile || activeTab === 'flow') && (
+                <TabsTrigger value="flow" className={isMobile ? 'text-xs py-1 px-2' : ''}>
+                  Flow View
+                </TabsTrigger>
+              )}
+            </TabsList>
+            
+            <TabsContent value="components" className="flex-1 h-full overflow-hidden">
+              <div className="h-full overflow-hidden rounded-md">
+                <AgentComponentManager 
+                  components={components}
+                  onEditComponent={handleEditComponent}
+                  onAddComponent={handleAddComponent}
+                  onUseComponent={handleUseComponent}
+                />
               </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="enhanced-chat">
-            <div className="h-[500px] flex items-center justify-center bg-white rounded-md">
-              <div className="text-center">
-                <h3 className="text-lg font-medium mb-2">Enhanced Chat</h3>
-                <p className="text-gray-500 mb-4">Advanced chat with reasoning visualization</p>
-                <Button className="bg-neutrinos-blue hover:bg-neutrinos-blue/90">
-                  Open Enhanced Chat
-                </Button>
+            </TabsContent>
+            
+            <TabsContent value="capabilities" className="p-0 flex-1 bg-white rounded-md h-full overflow-hidden">
+              <AgentActionsView
+                availableActions={capabilityActions}
+                actionHistory={actionHistory}
+                onSelectAction={(action) => console.log('Selected action:', action)}
+                onCreateAction={() => handleAddComponent('Capability')}
+                onExportHistory={() => console.log('Export history')}
+                onApprove={(actionId) => console.log('Approve action:', actionId)}
+              />
+            </TabsContent>
+            
+            <TabsContent value="chat" className="h-full overflow-hidden">
+              <div className={`${isMobile ? 'h-[400px]' : 'h-[500px]'} flex items-center justify-center bg-white rounded-md`}>
+                <div className="text-center p-4">
+                  <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium mb-2`}>Action Chat</h3>
+                  <p className="text-gray-500 mb-4 text-sm">Interactive chat interface with agent actions</p>
+                  <Button className="bg-neutrinos-blue hover:bg-neutrinos-blue/90" size={isMobile ? "sm" : "default"}>
+                    Open Chat
+                  </Button>
+                </div>
               </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="flow">
-            <div className="h-[500px] flex items-center justify-center bg-white rounded-md">
-              <div className="text-center">
-                <h3 className="text-lg font-medium mb-2">Flow View</h3>
-                <p className="text-gray-500 mb-4">Visual agent reasoning flow diagram</p>
-                <Button className="bg-neutrinos-blue hover:bg-neutrinos-blue/90">
-                  Open Flow View
-                </Button>
+            </TabsContent>
+            
+            <TabsContent value="enhanced-chat" className="h-full overflow-hidden">
+              <div className={`${isMobile ? 'h-[400px]' : 'h-[500px]'} flex items-center justify-center bg-white rounded-md`}>
+                <div className="text-center p-4">
+                  <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium mb-2`}>Enhanced Chat</h3>
+                  <p className="text-gray-500 mb-4 text-sm">Advanced chat with reasoning visualization</p>
+                  <Button className="bg-neutrinos-blue hover:bg-neutrinos-blue/90" size={isMobile ? "sm" : "default"}>
+                    Open Enhanced Chat
+                  </Button>
+                </div>
               </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+            
+            <TabsContent value="flow" className="h-full overflow-hidden">
+              <div className={`${isMobile ? 'h-[400px]' : 'h-[500px]'} flex items-center justify-center bg-white rounded-md`}>
+                <div className="text-center p-4">
+                  <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium mb-2`}>Flow View</h3>
+                  <p className="text-gray-500 mb-4 text-sm">Visual agent reasoning flow diagram</p>
+                  <Button className="bg-neutrinos-blue hover:bg-neutrinos-blue/90" size={isMobile ? "sm" : "default"}>
+                    Open Flow View
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </ResponsiveContainer>
       </div>
       
       {/* Component Editor Dialog */}
