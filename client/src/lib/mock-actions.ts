@@ -4,32 +4,21 @@
 export interface AgentAction {
   id: string;
   name: string;
-  category?: string;
+  category: string;
   description: string;
-  status?: 'available' | 'restricted' | 'Ready' | 'Pending';
+  status?: 'available' | 'restricted';
   tags?: string[];
   configuration?: Record<string, any>;
-  inputFields?: {
-    name: string;
-    type: string;
-    required: boolean;
-  }[];
-  outputFields?: {
-    name: string;
-    type: string;
-  }[];
 }
 
 export interface ActionHistoryItem {
   id: string;
-  type?: string;
-  title?: string;
-  name?: string;
-  timestamp: Date | string;
+  type: string;
+  title: string;
+  timestamp: Date;
   status?: 'success' | 'warning' | 'error' | 'pending';
   metadata?: Record<string, any>;
   confidence?: number;
-  result?: string;
 }
 
 export const availableActions: AgentAction[] = [
