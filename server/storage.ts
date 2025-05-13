@@ -373,6 +373,80 @@ export class MemStorage implements IStorage {
     return this.dataPermissions.delete(id);
   }
   
+  // Tool Integration methods
+  async getTools(): Promise<AgentTool[]> {
+    return Array.from(this.agentTools.values());
+  }
+  
+  async getToolById(id: number): Promise<AgentTool | undefined> {
+    return this.agentTools.get(id);
+  }
+  
+  async createTool(tool: InsertAgentTool): Promise<AgentTool> {
+    const id = this.currentToolId++;
+    const newTool: AgentTool = {
+      ...tool,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: tool.status || 'Active',
+      version: tool.version || '1.0.0',
+      authConfig: tool.authConfig || {},
+      parameters: tool.parameters || [],
+      responseSchema: tool.responseSchema || {},
+      metadata: tool.metadata || {}
+    };
+    this.agentTools.set(id, newTool);
+    return newTool;
+  }
+  
+  async updateTool(id: number, tool: UpdateAgentTool): Promise<AgentTool | undefined> {
+    const existingTool = this.agentTools.get(id);
+    if (!existingTool) return undefined;
+    
+    const updatedTool = {
+      ...existingTool,
+      ...tool,
+      updatedAt: new Date()
+    };
+    this.agentTools.set(id, updatedTool);
+    return updatedTool;
+  }
+  
+  async deleteTool(id: number): Promise<boolean> {
+    return this.agentTools.delete(id);
+  }
+  
+  // Tool Execution methods
+  async getToolExecutions(toolId?: number, runId?: string): Promise<ToolExecution[]> {
+    let executions = Array.from(this.toolExecutions.values());
+    
+    if (toolId) {
+      executions = executions.filter(exec => exec.toolId === toolId);
+    }
+    
+    if (runId) {
+      executions = executions.filter(exec => exec.runId === runId);
+    }
+    
+    return executions;
+  }
+  
+  async createToolExecution(execution: InsertToolExecution): Promise<ToolExecution> {
+    const id = this.currentToolExecutionId++;
+    const newExecution: ToolExecution = {
+      ...execution,
+      id,
+      timestamp: new Date()
+    };
+    this.toolExecutions.set(id, newExecution);
+    return newExecution;
+  }
+  
+  async getToolExecutionById(id: number): Promise<ToolExecution | undefined> {
+    return this.toolExecutions.get(id);
+  }
+  
   // Initialize with mock data
   private initializeMockData(): void {
     // Mock agents
