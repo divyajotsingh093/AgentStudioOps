@@ -8,7 +8,8 @@ import {
   insertAgentComponentSchema, updateAgentComponentSchema,
   insertDataSourceSchema, updateDataSourceSchema,
   insertDataConnectorSchema, updateDataConnectorSchema,
-  insertDataPermissionSchema
+  insertDataPermissionSchema, insertToolSchema, updateToolSchema,
+  insertToolExecutionSchema, toolTypeEnum, toolAuthTypeEnum, toolStatusEnum
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -484,6 +485,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).end();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete data permission" });
+    }
+  });
+
+  // Tool Integration API
+  app.get("/api/tools", async (req, res) => {
+    try {
+      const tools = await storage.getTools();
+      res.json(tools);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch tools" });
+    }
+  });
+
+  app.get("/api/tools/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid tool ID" });
+      }
+      
+      const tool = await storage.getToolById(id);
+      if (!tool) {
+        return res.status(404).json({ message: "Tool not found" });
+      }
+      res.json(tool);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch tool" });
+    }
+  });
+
+  app.post("/api/tools", async (req, res) => {
+    try {
+      const toolData = insertToolSchema.parse(req.body);
+      const newTool = await storage.createTool(toolData);
+      res.status(201).json(newTool);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid tool data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create tool" });
+    }
+  });
+
+  app.put("/api/tools/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid tool ID" });
+      }
+      
+      const toolData = updateToolSchema.parse(req.body);
+      const updatedTool = await storage.updateTool(id, toolData);
+      if (!updatedTool) {
+        return res.status(404).json({ message: "Tool not found" });
+      }
+      res.json(updatedTool);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid tool data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update tool" });
+    }
+  });
+
+  app.delete("/api/tools/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid tool ID" });
+      }
+      
+      const success = await storage.deleteTool(id);
+      if (!success) {
+        return res.status(404).json({ message: "Tool not found" });
+      }
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete tool" });
+    }
+  });
+
+  // Tool Execution API
+  app.get("/api/tool-executions", async (req, res) => {
+    try {
+      const toolId = req.query.toolId ? parseInt(req.query.toolId as string) : undefined;
+      const runId = req.query.runId as string | undefined;
+      
+      const executions = await storage.getToolExecutions(toolId, runId);
+      res.json(executions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch tool executions" });
+    }
+  });
+
+  app.get("/api/tool-executions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid execution ID" });
+      }
+      
+      const execution = await storage.getToolExecutionById(id);
+      if (!execution) {
+        return res.status(404).json({ message: "Tool execution not found" });
+      }
+      res.json(execution);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch tool execution" });
+    }
+  });
+
+  app.post("/api/tool-executions", async (req, res) => {
+    try {
+      const executionData = insertToolExecutionSchema.parse(req.body);
+      const newExecution = await storage.createToolExecution(executionData);
+      res.status(201).json(newExecution);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid execution data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create tool execution" });
+    }
+  });
+
+  // Tool metadata and configuration
+  app.get("/api/tool-metadata", (req, res) => {
+    try {
+      res.json({
+        types: toolTypeEnum.options,
+        authTypes: toolAuthTypeEnum.options,
+        statuses: toolStatusEnum.options
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch tool metadata" });
     }
   });
 
