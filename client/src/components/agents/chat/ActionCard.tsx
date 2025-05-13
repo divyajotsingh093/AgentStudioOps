@@ -1,333 +1,346 @@
 import React from 'react';
 import { 
-  Card, 
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
+  ChevronDown, 
+  ChevronUp,
   Database, 
   FileText, 
-  Calculator, 
-  Mail, 
-  Search,
-  ExternalLink,
-  RefreshCw,
-  AlertTriangle,
-  CheckCircle,
-  ChevronDown,
-  Download,
-  Copy
-} from "lucide-react";
+  Calculator,
+  Mail,
+  AlertTriangle 
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 
 export type ActionType = 
   | 'data-fabric-query' 
-  | 'document-extraction' 
   | 'risk-calculation' 
+  | 'document-extraction' 
   | 'email-notification'
-  | 'policy-search'
   | 'threshold-alert';
 
 interface ActionCardProps {
   type: ActionType;
   title: string;
+  timestamp: string;
   data: any;
-  timestamp?: string;
-  onAction?: (action: string, data?: any) => void;
-  expanded?: boolean;
-  onToggleExpand?: () => void;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onAction: (action: string, data: any) => void;
 }
 
-export const ActionCard: React.FC<ActionCardProps> = ({
+const ActionCard: React.FC<ActionCardProps> = ({
   type,
   title,
-  data,
   timestamp,
-  onAction,
-  expanded = false,
-  onToggleExpand
+  data,
+  expanded,
+  onToggleExpand,
+  onAction
 }) => {
-  const getIcon = () => {
-    switch (type) {
+  const getIconByType = () => {
+    switch(type) {
       case 'data-fabric-query':
-        return <Database className="h-5 w-5 text-blue-600" />;
-      case 'document-extraction':
-        return <FileText className="h-5 w-5 text-green-600" />;
+        return <Database className="h-4 w-4 text-neutrinos-blue" />;
       case 'risk-calculation':
-        return <Calculator className="h-5 w-5 text-purple-600" />;
+        return <Calculator className="h-4 w-4 text-purple-600" />;
+      case 'document-extraction':
+        return <FileText className="h-4 w-4 text-green-600" />;
       case 'email-notification':
-        return <Mail className="h-5 w-5 text-orange-600" />;
-      case 'policy-search':
-        return <Search className="h-5 w-5 text-red-600" />;
+        return <Mail className="h-4 w-4 text-orange-500" />;
       case 'threshold-alert':
-        return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
       default:
-        return <Database className="h-5 w-5 text-gray-600" />;
+        return <FileText className="h-4 w-4 text-gray-500" />;
     }
   };
 
-  const getCardContent = () => {
-    switch (type) {
+  const renderDataContent = () => {
+    switch(type) {
       case 'data-fabric-query':
-        return renderDataFabricCard();
-      case 'risk-calculation':
-        return renderRiskCalculationCard();
-      case 'document-extraction':
-        return renderDocumentExtractionCard();
-      case 'email-notification':
-        return renderEmailNotificationCard();
-      case 'threshold-alert':
-        return renderThresholdAlertCard();
-      default:
         return (
-          <div className="text-sm text-gray-700">
-            <pre className="bg-gray-50 p-2 rounded overflow-x-auto text-xs">
-              {JSON.stringify(data, null, 2)}
-            </pre>
+          <div className="mt-3">
+            <div className="text-xs font-medium mb-2">Query Results</div>
+            <div className="bg-gray-50 rounded-md p-2 overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    {data.headers.map((header: string, index: number) => (
+                      <th key={index} className="py-1 px-2 text-left text-gray-600 font-medium">{header}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.rows.map((row: any, rowIndex: number) => (
+                    <tr key={rowIndex} className="border-b border-gray-200 last:border-0">
+                      <td className="py-1 px-2">{row.id}</td>
+                      <td className="py-1 px-2">{row.name}</td>
+                      <td className="py-1 px-2">{row.policyCount}</td>
+                      <td className="py-1 px-2">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-${row.status.color}-600 bg-${row.status.color}-50 border-${row.status.color}-200`}
+                        >
+                          {row.status.value}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         );
+      
+      case 'risk-calculation':
+        return (
+          <div className="mt-3">
+            <div className="text-xs font-medium mb-2">{data.title}</div>
+            <div className="mb-2">
+              <Badge 
+                variant="outline" 
+                className={`text-${data.result.color}-600 bg-${data.result.color}-50 border-${data.result.color}-200`}
+              >
+                {data.result.value}
+              </Badge>
+            </div>
+            <div className="bg-gray-50 rounded-md p-2">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {data.factors.map((factor: any, index: number) => (
+                  <div key={index} className="flex justify-between">
+                    <span className="text-gray-600">{factor.name}:</span>
+                    <span className="font-medium">{factor.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'document-extraction':
+        return (
+          <div className="mt-3">
+            <div className="flex justify-between items-center mb-2">
+              <div className="text-xs font-medium">{data.document}</div>
+              <Badge variant="outline" className="text-xs">
+                {data.confidence}% confident
+              </Badge>
+            </div>
+            <div className="bg-gray-50 rounded-md p-2">
+              <div className="grid grid-cols-2 gap-y-2 text-xs">
+                {data.fields.map((field: any, index: number) => (
+                  <div key={index} className="flex justify-between">
+                    <span className="text-gray-600">{field.name}:</span>
+                    <span className="font-medium">{field.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="text-xs text-gray-500 mt-2">
+              Processed by {data.model}
+            </div>
+          </div>
+        );
+      
+      case 'email-notification':
+        return (
+          <div className="mt-3 space-y-2">
+            <div className="flex justify-between items-center">
+              <div className="text-xs text-gray-600">To: {data.to}</div>
+              <Badge 
+                variant="outline" 
+                className={`text-${data.status.color}-600 bg-${data.status.color}-50 border-${data.status.color}-200`}
+              >
+                {data.status.value}
+              </Badge>
+            </div>
+            <div className="text-xs font-medium">Subject: {data.subject}</div>
+            <div className="bg-gray-50 rounded-md p-2 text-xs">
+              {data.body}
+            </div>
+          </div>
+        );
+      
+      case 'threshold-alert':
+        return (
+          <div className="mt-3 space-y-2">
+            <div className="text-xs font-medium text-amber-600">{data.message}</div>
+            <div className="text-xs text-gray-600">{data.details}</div>
+            <div className="bg-gray-50 rounded-md p-2">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Threshold Type:</span>
+                  <span className="font-medium">{data.thresholdType}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Current Value:</span>
+                  <span className="font-medium">{data.currentValue}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Limit:</span>
+                  <span className="font-medium">{data.limit}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Severity:</span>
+                  <span className="font-medium">{data.severity}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      
+      default:
+        return <div className="text-xs text-gray-500">No detailed information available</div>;
     }
   };
 
-  const renderDataFabricCard = () => (
-    <>
-      <div className="mt-2 overflow-x-auto">
-        <table className="min-w-full bg-white rounded shadow-sm text-xs">
-          <thead className="bg-gray-50">
-            <tr>
-              {data.headers.map((header: string, i: number) => (
-                <th key={i} className="px-3 py-2 text-left">{header}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {data.rows.map((row: any, i: number) => (
-              <tr key={i}>
-                {Object.values(row).map((cell: any, j: number) => (
-                  <td key={j} className="px-3 py-2">
-                    {typeof cell === 'object' && cell.type === 'badge' ? (
-                      <Badge className={`bg-${cell.color}-100 text-${cell.color}-700`}>
-                        {cell.value}
-                      </Badge>
-                    ) : (
-                      cell
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-3 flex justify-end">
-        <Button size="sm" variant="outline" className="mr-2" onClick={() => onAction?.('view-all', data)}>
-          <ExternalLink className="h-3 w-3 mr-1" />
-          View All
-        </Button>
-        <Button size="sm" onClick={() => onAction?.('open-source', data)}>
-          <Database className="h-3 w-3 mr-1" />
-          Open Source
-        </Button>
-      </div>
-    </>
-  );
-
-  const renderRiskCalculationCard = () => (
-    <>
-      <div className="text-sm">
-        <p className="font-medium">{data.title}:</p>
-        <p className={`mt-1 font-semibold text-${data.result.color}-700`}>{data.result.value}</p>
-      </div>
-      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-        {data.factors.map((factor: any, i: number) => (
-          <div key={i} className="bg-white p-2 rounded">
-            <span className="text-gray-500">{factor.name}:</span> {factor.value}
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 flex justify-end">
-        <Button variant="outline" size="sm" className="mr-2" onClick={() => onAction?.('export', data)}>
-          <Download className="h-3 w-3 mr-1" />
-          Export
-        </Button>
-        <Button size="sm" onClick={() => onAction?.('approve', data)}>
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Approve
-        </Button>
-      </div>
-    </>
-  );
-
-  const renderDocumentExtractionCard = () => (
-    <>
-      <div className="mt-2 space-y-2">
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-gray-500">Document:</span>
-          <span className="font-medium">{data.document}</span>
-        </div>
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-gray-500">Extraction Model:</span>
-          <span>{data.model}</span>
-        </div>
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-gray-500">Confidence:</span>
-          <span>{data.confidence}%</span>
-        </div>
-      </div>
-      <div className="mt-3">
-        <div className="text-xs font-medium text-gray-700 mb-1">Extracted Fields:</div>
-        <div className="space-y-2">
-          {data.fields.map((field: any, i: number) => (
-            <div key={i} className="bg-gray-50 p-2 rounded text-xs">
-              <div className="font-medium">{field.name}</div>
-              <div className="mt-1 text-gray-700">{field.value}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="mt-3 flex justify-end">
-        <Button size="sm" variant="outline" className="mr-2" onClick={() => onAction?.('copy', data)}>
-          <Copy className="h-3 w-3 mr-1" />
-          Copy All
-        </Button>
-        <Button size="sm" onClick={() => onAction?.('download-pdf', data)}>
-          <Download className="h-3 w-3 mr-1" />
-          Download PDF
-        </Button>
-      </div>
-    </>
-  );
-
-  const renderEmailNotificationCard = () => (
-    <>
-      <div className="bg-gray-50 p-3 rounded text-xs">
-        <div className="grid grid-cols-3 gap-2 mb-2">
-          <div>
-            <span className="text-gray-500">To:</span>
-            <span className="ml-1 font-medium">{data.to}</span>
-          </div>
-          <div>
-            <span className="text-gray-500">Subject:</span>
-            <span className="ml-1 font-medium">{data.subject}</span>
-          </div>
-          <div>
-            <span className="text-gray-500">Status:</span>
-            <Badge className={`bg-${data.status.color}-100 text-${data.status.color}-700 ml-1`}>
-              {data.status.value}
-            </Badge>
-          </div>
-        </div>
-        <div className="border-t border-gray-200 pt-2 mt-2">
-          <div className="text-gray-500 mb-1">Message Preview:</div>
-          <div className="bg-white p-2 rounded border border-gray-200">
-            {data.body}
-          </div>
-        </div>
-      </div>
-      <div className="mt-3 flex justify-end">
-        <Button size="sm" variant="outline" className="mr-2" onClick={() => onAction?.('edit', data)}>
-          <Mail className="h-3 w-3 mr-1" />
-          Edit Email
-        </Button>
-        <Button size="sm" onClick={() => onAction?.('resend', data)}>
-          <RefreshCw className="h-3 w-3 mr-1" />
-          Resend
-        </Button>
-      </div>
-    </>
-  );
-
-  const renderThresholdAlertCard = () => (
-    <>
-      <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-yellow-800 text-sm">
-        <div className="flex items-start">
-          <AlertTriangle className="h-5 w-5 mr-2 text-yellow-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium">{data.message}</p>
-            <p className="mt-1 text-xs text-yellow-700">{data.details}</p>
-          </div>
-        </div>
-      </div>
-      <div className="mt-3">
-        <div className="text-xs font-medium text-gray-700 mb-1">Threshold Details:</div>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="bg-white p-2 rounded">
-            <span className="text-gray-500">Threshold Type:</span> {data.thresholdType}
-          </div>
-          <div className="bg-white p-2 rounded">
-            <span className="text-gray-500">Current Value:</span> {data.currentValue}
-          </div>
-          <div className="bg-white p-2 rounded">
-            <span className="text-gray-500">Limit:</span> {data.limit}
-          </div>
-          <div className="bg-white p-2 rounded">
-            <span className="text-gray-500">Severity:</span> {data.severity}
-          </div>
-        </div>
-      </div>
-      <div className="mt-3 flex justify-end">
-        <Button size="sm" variant="outline" className="mr-2" onClick={() => onAction?.('ignore', data)}>
-          Ignore Once
-        </Button>
-        <Button size="sm" onClick={() => onAction?.('adjust-threshold', data)}>
-          Adjust Threshold
-        </Button>
-      </div>
-    </>
-  );
+  const renderCardFooter = () => {
+    if (!expanded) return null;
+    
+    switch(type) {
+      case 'data-fabric-query':
+        return (
+          <CardFooter className="pt-0 px-4 pb-3 flex justify-end gap-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="text-xs h-7"
+              onClick={() => onAction('export', data)}
+            >
+              Export Data
+            </Button>
+            <Button 
+              size="sm" 
+              variant="default" 
+              className="text-xs h-7 bg-neutrinos-blue hover:bg-neutrinos-blue/90"
+              onClick={() => onAction('filter', data)}
+            >
+              Filter Results
+            </Button>
+          </CardFooter>
+        );
+      
+      case 'risk-calculation':
+        return (
+          <CardFooter className="pt-0 px-4 pb-3 flex justify-end gap-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="text-xs h-7"
+              onClick={() => onAction('details', data)}
+            >
+              View Details
+            </Button>
+            <Button 
+              size="sm" 
+              variant="default" 
+              className="text-xs h-7 bg-neutrinos-blue hover:bg-neutrinos-blue/90"
+              onClick={() => onAction('adjust', data)}
+            >
+              Adjust Factors
+            </Button>
+          </CardFooter>
+        );
+      
+      case 'document-extraction':
+        return (
+          <CardFooter className="pt-0 px-4 pb-3 flex justify-end gap-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="text-xs h-7"
+              onClick={() => onAction('view', data)}
+            >
+              View Document
+            </Button>
+            <Button 
+              size="sm" 
+              variant="default" 
+              className="text-xs h-7 bg-neutrinos-blue hover:bg-neutrinos-blue/90"
+              onClick={() => onAction('verify', data)}
+            >
+              Verify Extraction
+            </Button>
+          </CardFooter>
+        );
+      
+      case 'email-notification':
+        return (
+          <CardFooter className="pt-0 px-4 pb-3 flex justify-end gap-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="text-xs h-7"
+              onClick={() => onAction('resend', data)}
+            >
+              Resend
+            </Button>
+            <Button 
+              size="sm" 
+              variant="default" 
+              className="text-xs h-7 bg-neutrinos-blue hover:bg-neutrinos-blue/90"
+              onClick={() => onAction('edit', data)}
+            >
+              Edit & Resend
+            </Button>
+          </CardFooter>
+        );
+      
+      case 'threshold-alert':
+        return (
+          <CardFooter className="pt-0 px-4 pb-3 flex justify-end gap-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="text-xs h-7"
+              onClick={() => onAction('override', data)}
+            >
+              Override
+            </Button>
+            <Button 
+              size="sm" 
+              variant="default" 
+              className="text-xs h-7 bg-neutrinos-blue hover:bg-neutrinos-blue/90"
+              onClick={() => onAction('approve', data)}
+            >
+              Request Approval
+            </Button>
+          </CardFooter>
+        );
+      
+      default:
+        return null;
+    }
+  };
 
   return (
-    <Card className={`mb-3 shadow-sm bg-gradient-to-r ${
-      type === 'data-fabric-query' ? 'from-blue-50 to-indigo-50 border-blue-200' :
-      type === 'risk-calculation' ? 'from-purple-50 to-pink-50 border-purple-200' :
-      type === 'document-extraction' ? 'from-green-50 to-teal-50 border-green-200' :
-      type === 'email-notification' ? 'from-orange-50 to-amber-50 border-orange-200' :
-      type === 'threshold-alert' ? 'from-yellow-50 to-amber-50 border-yellow-200' :
-      'from-gray-50 to-gray-100 border-gray-200'
-    }`}>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div className="flex items-center">
-            {getIcon()}
-            <CardTitle className="text-sm font-medium ml-2">{title}</CardTitle>
-          </div>
-          <div className="flex items-center">
-            {timestamp && (
-              <span className="text-xs text-gray-500 mr-2">{timestamp}</span>
-            )}
-            {onToggleExpand && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-7 w-7 p-0" 
-                onClick={onToggleExpand}
-              >
-                <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-              </Button>
-            )}
-          </div>
+    <Card className="mb-3 border-gray-200 overflow-hidden">
+      <CardHeader className="px-4 py-3 flex flex-row items-center justify-between space-y-0">
+        <div className="flex items-center space-x-2">
+          {getIconByType()}
+          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">{timestamp}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+            onClick={onToggleExpand}
+          >
+            {expanded ? 
+              <ChevronUp className="h-4 w-4" /> : 
+              <ChevronDown className="h-4 w-4" />
+            }
+          </Button>
         </div>
       </CardHeader>
       {expanded && (
-        <CardContent className="pt-0">
-          {getCardContent()}
+        <CardContent className="px-4 py-0">
+          {renderDataContent()}
         </CardContent>
       )}
-      {!expanded && (
-        <CardFooter className="pt-0 pb-3">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-xs w-full justify-center" 
-            onClick={onToggleExpand}
-          >
-            Show Details <ChevronDown className="h-3 w-3 ml-1" />
-          </Button>
-        </CardFooter>
-      )}
+      {renderCardFooter()}
     </Card>
   );
 };
