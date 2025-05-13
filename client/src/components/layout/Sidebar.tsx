@@ -8,6 +8,7 @@ import {
   Shield,
   Database,
   Settings,
+  Puzzle,
   LucideIcon
 } from "lucide-react";
 import Logo from "../ui/logo";
@@ -60,6 +61,7 @@ const Sidebar = () => {
       <nav className="flex-grow">
         <ul className="p-2">
           <SidebarItem href="/" icon={Layers} label="Agents" active={isActive("/")} />
+          <SidebarItem href="/agents/components" icon={Puzzle} label="Component Models" active={isActive("/agents/components")} />
           <SidebarItem href="/dashboard" icon={Activity} label="Run Dashboard" active={isActive("/dashboard")} />
           <SidebarItem href="/governance" icon={Shield} label="Governance" active={isActive("/governance")} />
           <SidebarItem href="/data-sources" icon={Database} label="Data Sources" active={isActive("/data-sources")} />
