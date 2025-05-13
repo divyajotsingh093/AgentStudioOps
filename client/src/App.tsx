@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import MainLayout from "@/components/layout/MainLayout";
 import AgentsLanding from "@/pages/agents/AgentsLanding";
 import AgentStudio from "@/pages/agents/AgentStudio";
+import AgentBuilderPage from "@/pages/agents/AgentBuilderPage";
 import RunDashboard from "@/pages/dashboard/RunDashboard";
 import RunDetail from "@/pages/runs/RunDetail";
 import GovernanceLog from "@/pages/governance/GovernanceLog";
