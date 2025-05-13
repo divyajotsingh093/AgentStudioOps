@@ -1,136 +1,100 @@
 import React from "react";
-import { useRoute, useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { useParams, useLocation } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Helmet } from "react-helmet";
+import { apiRequest } from "@/lib/queryClient";
 import ToolForm from "@/components/tools/ToolForm";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import { z } from "zod";
 import { updateToolSchema, AgentTool } from "@shared/schema";
+import { z } from "zod";
+import { Loader2 } from "lucide-react";
+import { Helmet } from "react-helmet";
 
 type FormValues = z.infer<typeof updateToolSchema>;
 
 const EditToolPage: React.FC = () => {
+  const params = useParams<{ id: string }>();
+  const toolId = parseInt(params.id, 10);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [, navigate] = useLocation();
-  const [match, params] = useRoute<{ id: string }>("/tools/:id");
 
-  const toolId = match ? parseInt(params.id) : null;
-
-  // Fetch tool details
   const { data: tool, isLoading, error } = useQuery<AgentTool>({
-    queryKey: ["/api/tools", toolId],
-    enabled: !!toolId,
+    queryKey: [`/api/tools/${toolId}`],
+    enabled: !isNaN(toolId),
   });
 
-  // Update mutation
-  const updateMutation = useMutation({
+  const mutation = useMutation({
     mutationFn: async (data: FormValues) => {
-      const response = await fetch(`/api/tools/${toolId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+      return apiRequest(`/api/tools/${toolId}`, {
+        method: 'PUT',
+        data,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update tool");
-      }
-
-      return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tools'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/tools/${toolId}`] });
       toast({
         title: "Tool updated",
-        description: "The tool has been successfully updated.",
+        description: "The tool has been successfully updated",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/tools"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/tools", toolId] });
       navigate("/tools");
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: `Failed to update tool: ${error.message}`,
+        description: "Failed to update the tool. Please check your input and try again.",
         variant: "destructive",
       });
+      console.error("Update error:", error);
     },
   });
 
   const handleSubmit = (data: FormValues) => {
-    updateMutation.mutate(data);
+    mutation.mutate(data);
   };
-
-  if (!match) {
-    return null;
-  }
 
   if (isLoading) {
     return (
-      <div className="container py-6 space-y-6">
-        <Skeleton className="h-8 w-1/3" />
-        <Skeleton className="h-4 w-1/4" />
-        <div className="space-y-4">
-          <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (error) {
+  if (error || !tool) {
     return (
-      <div className="container py-6">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            Failed to load tool: {(error as Error).message}
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
-  if (!tool) {
-    return (
-      <div className="container py-6">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Not Found</AlertTitle>
-          <AlertDescription>Tool not found.</AlertDescription>
-        </Alert>
+      <div className="flex flex-col items-center justify-center h-64">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Tool not found</h3>
+        <p className="text-gray-500 mb-4">
+          The tool you're looking for doesn't exist or you don't have permission to view it.
+        </p>
+        <a href="/tools" className="text-primary hover:underline">
+          Return to tools
+        </a>
       </div>
     );
   }
 
   return (
-    <>
+    <div className="container mx-auto p-4 md:p-6 max-w-5xl">
       <Helmet>
-        <title>Edit Tool | Neutrinos AI Agent Studio</title>
-        <meta name="description" content="Edit an existing tool or integration for AI agents" />
+        <title>Edit Tool: {tool.name} | Neutrinos AI Agent Studio</title>
+        <meta name="description" content={`Edit settings for ${tool.name} tool and update its configuration.`} />
       </Helmet>
-
-      <div className="container py-6 space-y-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold">Edit Tool</h1>
-          <p className="text-gray-500">
-            Update configuration for "{tool.name}"
-          </p>
-        </div>
-
-        <ToolForm 
-          defaultValues={tool} 
-          onSubmit={handleSubmit} 
-          isSubmitting={updateMutation.isPending} 
-        />
+      
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Edit Tool: {tool.name}</h1>
+        <p className="text-gray-600 mt-1">
+          Update the configuration and settings for this tool
+        </p>
       </div>
-    </>
+
+      <ToolForm 
+        defaultValues={tool} 
+        onSubmit={handleSubmit} 
+        isSubmitting={mutation.isPending} 
+      />
+    </div>
   );
 };
 

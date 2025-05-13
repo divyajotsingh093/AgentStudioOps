@@ -46,9 +46,9 @@ function Router() {
         <Route path="/data-fabric/policies" component={DataPoliciesIndex} />
         
         {/* Tools */}
-        <Route path="/tools" component={() => <div className="p-8">Tools Page (Coming Soon)</div>} />
-        <Route path="/tools/new" component={() => <div className="p-8">Create Tool Form (Coming Soon)</div>} />
-        <Route path="/tools/:id" component={() => <div className="p-8">Edit Tool Page (Coming Soon)</div>} />
+        <Route path="/tools" component={lazy(() => import('@/pages/tools'))} />
+        <Route path="/tools/new" component={lazy(() => import('@/pages/tools/new'))} />
+        <Route path="/tools/:id" component={lazy(() => import('@/pages/tools/[id]'))} />
         
         <Route component={NotFound} />
       </Switch>
