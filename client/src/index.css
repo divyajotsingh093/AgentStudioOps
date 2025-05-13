@@ -99,11 +99,11 @@
 
   /* Studio tabs */
   .studio-tab {
-    @apply px-4 py-2 font-medium border-b-2 border-transparent hover:text-primary transition-colors;
+    @apply px-4 py-2 font-medium border-b-2 border-transparent hover:text-neutrinos-blue transition-colors;
   }
 
   .studio-tab.active {
-    @apply border-primary text-primary;
+    @apply border-neutrinos-blue text-neutrinos-blue;
   }
 
   /* Chat bubbles */

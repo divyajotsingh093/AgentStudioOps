@@ -163,21 +163,21 @@ const AgentActionChat: React.FC<AgentActionChatProps> = ({
   const renderMetricsPanel = () => (
     <div className="px-4 py-3 space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-blue-50 rounded-md p-3">
+        <div className="bg-neutrinos-blue/10 rounded-md p-3">
           <div className="text-xs text-gray-500">Total Actions</div>
-          <div className="text-xl font-semibold text-blue-600">{mockMetrics.totalActions}</div>
+          <div className="text-xl font-semibold text-neutrinos-blue">{mockMetrics.totalActions}</div>
         </div>
-        <div className="bg-blue-50 rounded-md p-3">
+        <div className="bg-neutrinos-blue/10 rounded-md p-3">
           <div className="text-xs text-gray-500">Avg Response Time</div>
-          <div className="text-xl font-semibold text-blue-600">{mockMetrics.avgResponseTime}</div>
+          <div className="text-xl font-semibold text-neutrinos-blue">{mockMetrics.avgResponseTime}</div>
         </div>
-        <div className="bg-blue-50 rounded-md p-3">
+        <div className="bg-neutrinos-blue/10 rounded-md p-3">
           <div className="text-xs text-gray-500">Success Rate</div>
-          <div className="text-xl font-semibold text-blue-600">{mockMetrics.successRate}</div>
+          <div className="text-xl font-semibold text-neutrinos-blue">{mockMetrics.successRate}</div>
         </div>
-        <div className="bg-blue-50 rounded-md p-3">
+        <div className="bg-neutrinos-blue/10 rounded-md p-3">
           <div className="text-xs text-gray-500">Token Usage</div>
-          <div className="text-xl font-semibold text-blue-600">{mockMetrics.tokenUsage}</div>
+          <div className="text-xl font-semibold text-neutrinos-blue">{mockMetrics.tokenUsage}</div>
         </div>
       </div>
 
@@ -189,7 +189,7 @@ const AgentActionChat: React.FC<AgentActionChatProps> = ({
               <div className="w-32 text-xs">{item.type}</div>
               <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600" 
+                  className="h-full bg-neutrinos-blue" 
                   style={{ width: `${(item.count / mockMetrics.totalActions) * 100}%` }}
                 />
               </div>
@@ -206,21 +206,21 @@ const AgentActionChat: React.FC<AgentActionChatProps> = ({
       <div className="border rounded-md divide-y">
         <div className="p-3 flex items-center justify-between">
           <div className="flex items-center">
-            <FileText className="h-4 w-4 text-blue-600 mr-2" />
+            <FileText className="h-4 w-4 text-neutrinos-blue mr-2" />
             <span className="text-sm">Medical_Report_12345.pdf</span>
           </div>
           <Button variant="ghost" size="sm">View</Button>
         </div>
         <div className="p-3 flex items-center justify-between">
           <div className="flex items-center">
-            <FileText className="h-4 w-4 text-blue-600 mr-2" />
+            <FileText className="h-4 w-4 text-neutrinos-blue mr-2" />
             <span className="text-sm">Application_Form.pdf</span>
           </div>
           <Button variant="ghost" size="sm">View</Button>
         </div>
         <div className="p-3 flex items-center justify-between">
           <div className="flex items-center">
-            <FileText className="h-4 w-4 text-blue-600 mr-2" />
+            <FileText className="h-4 w-4 text-neutrinos-blue mr-2" />
             <span className="text-sm">Lab_Results.pdf</span>
           </div>
           <Button variant="ghost" size="sm">View</Button>
@@ -233,7 +233,7 @@ const AgentActionChat: React.FC<AgentActionChatProps> = ({
     <div className="flex flex-col h-full bg-white">
       <div className="px-4 py-3 border-b flex items-center justify-between">
         <div className="flex items-center">
-          <Sparkles className="h-5 w-5 text-blue-600 mr-2" />
+          <Sparkles className="h-5 w-5 text-neutrinos-blue mr-2" />
           <div>
             <h2 className="text-md font-medium">{agentName}</h2>
             <div className="flex items-center mt-1">
@@ -247,7 +247,7 @@ const AgentActionChat: React.FC<AgentActionChatProps> = ({
             <RefreshCw className="h-4 w-4 mr-1" />
             Reset
           </Button>
-          <Button size="sm">
+          <Button size="sm" className="bg-neutrinos-blue hover:bg-neutrinos-blue/90">
             <Play className="h-4 w-4 mr-1" />
             Run
           </Button>

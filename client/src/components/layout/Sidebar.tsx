@@ -27,7 +27,7 @@ const SidebarItem = ({ href, icon: Icon, label, active }: SidebarItemProps) => {
           className={cn(
             "flex items-center p-2 rounded-lg font-medium transition-colors",
             active
-              ? "text-blue-600 bg-blue-50"
+              ? "text-neutrinos-blue bg-neutrinos-blue/10"
               : "text-slate-700 hover:bg-gray-100"
           )}
         >
@@ -52,7 +52,7 @@ const Sidebar = () => {
     <aside className="bg-white w-16 md:w-64 border-r border-gray-200 flex flex-col h-full">
       <div className="p-4 border-b border-gray-200 flex items-center justify-center md:justify-start">
         <Logo size="sm" className="hidden md:flex" />
-        <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center md:hidden">
+        <div className="h-8 w-8 bg-neutrinos-blue rounded-lg flex items-center justify-center md:hidden">
           <Bot className="h-5 w-5 text-white" />
         </div>
       </div>
