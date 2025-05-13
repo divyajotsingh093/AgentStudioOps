@@ -160,6 +160,50 @@ const initialComponents: AgentComponent[] = [
     details: {
       'Function': 'Provides unified data access across structured and unstructured sources'
     }
+  },
+  
+  // Enhanced detailed model examples
+  {
+    id: 'model-rule-1',
+    name: 'Medical Underwriting Rules',
+    category: 'Tools',
+    type: 'Medical Underwriting',
+    description: 'Advanced rule-based system for evaluating medical risks',
+    status: 'Available',
+    details: {
+      'Rules Count': '25',
+      'Accuracy': '97.8%',
+      'Version': '3.2.1',
+      'Last Updated': 'Apr 15, 2025'
+    }
+  },
+  {
+    id: 'model-doc-1',
+    name: 'Lab Test Analysis Model',
+    category: 'Tools',
+    type: 'Lab Document',
+    description: 'AI model for extracting and analyzing medical lab test results',
+    status: 'Available',
+    details: {
+      'Accuracy': '96.5%',
+      'Supported Tests': '45+',
+      'Processing Time': '3.2s',
+      'Last Updated': 'Feb 20, 2025'
+    }
+  },
+  {
+    id: 'model-data-1',
+    name: 'Benefit Mapping Schema',
+    category: 'Context',
+    type: 'Benefit Data',
+    description: 'Comprehensive schema for mapping insurance benefits across systems',
+    status: 'Available',
+    details: {
+      'Data Sources': '4',
+      'Entities': '12',
+      'Query Templates': '8',
+      'Last Updated': 'Apr 5, 2025'
+    }
   }
 ];
 
