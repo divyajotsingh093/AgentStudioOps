@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Plus, Search, Database, ApiIcon, FileIcon, Sliders, ArrowDownUp, Webhook, GitFork } from 'lucide-react';
+import { Plus, Search, Database, FileIcon, Sliders, ArrowDownUp, Webhook, GitFork, Network } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
 
@@ -141,7 +141,7 @@ const mockDataSources: DataSource[] = [
 // Data source type icons
 const typeIcons = {
   'Database': <Database className="h-5 w-5" />,
-  'API': <ApiIcon className="h-5 w-5" />,
+  'API': <Network className="h-5 w-5" />,
   'File': <FileIcon className="h-5 w-5" />,
   'Stream': <Sliders className="h-5 w-5" />,
   'Custom': <Webhook className="h-5 w-5" />

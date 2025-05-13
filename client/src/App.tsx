@@ -12,6 +12,10 @@ import AgentComponentsPage from "@/pages/agents/components/AgentComponentsPage";
 import RunDashboard from "@/pages/dashboard/RunDashboard";
 import RunDetail from "@/pages/runs/RunDetail";
 import GovernanceLog from "@/pages/governance/GovernanceLog";
+import DataSourcesPage from "@/pages/data-sources";
+import DataSourceDetail from "@/pages/data-sources/[id]";
+import DataConnectorsPage from "@/pages/data-sources/connectors";
+import ConnectorDetailPage from "@/pages/data-sources/connectors/[id]";
 
 function Router() {
   return (
@@ -25,6 +29,10 @@ function Router() {
         <Route path="/dashboard" component={RunDashboard} />
         <Route path="/runs/:id" component={RunDetail} />
         <Route path="/governance" component={GovernanceLog} />
+        <Route path="/data-sources" component={DataSourcesPage} />
+        <Route path="/data-sources/connectors" component={DataConnectorsPage} />
+        <Route path="/data-sources/connectors/:id" component={ConnectorDetailPage} />
+        <Route path="/data-sources/:id" component={DataSourceDetail} />
         <Route component={NotFound} />
       </Switch>
     </MainLayout>

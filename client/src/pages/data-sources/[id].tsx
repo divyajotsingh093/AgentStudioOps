@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { ChevronLeft, Database, ApiIcon, FileIcon, Sliders, Edit, Trash2, RefreshCw, Plus, Users, Key, AlertTriangle, CheckCircle, ArrowLeft, Webhook } from 'lucide-react';
+import { ChevronLeft, Database, Network, FileIcon, Sliders, Edit, Trash2, RefreshCw, Plus, Users, Key, AlertTriangle, CheckCircle, ArrowLeft, Webhook, Bot } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
 
@@ -205,7 +205,7 @@ const mockPermissions = [
 // Data source type icons
 const typeIcons = {
   'Database': <Database className="h-5 w-5" />,
-  'API': <ApiIcon className="h-5 w-5" />,
+  'API': <Network className="h-5 w-5" />,
   'File': <FileIcon className="h-5 w-5" />,
   'Stream': <Sliders className="h-5 w-5" />,
   'Custom': <Webhook className="h-5 w-5" />
