@@ -1,4 +1,5 @@
 import { Switch, Route } from "wouter";
+import { lazy, Suspense } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -45,8 +46,9 @@ function Router() {
         <Route path="/data-fabric/policies" component={DataPoliciesIndex} />
         
         {/* Tools */}
-        <Route path="/tools" component={() => <h1>Tools Page</h1>} />
-        <Route path="/tools/:id" component={() => <h1>Tool Detail Page</h1>} />
+        <Route path="/tools" component={() => <div className="p-8">Tools Page (Coming Soon)</div>} />
+        <Route path="/tools/new" component={() => <div className="p-8">Create Tool Form (Coming Soon)</div>} />
+        <Route path="/tools/:id" component={() => <div className="p-8">Edit Tool Page (Coming Soon)</div>} />
         
         <Route component={NotFound} />
       </Switch>
