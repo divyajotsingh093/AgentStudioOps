@@ -19,16 +19,18 @@ import { ChatMessage, ReasoningTrace } from "@/lib/types";
 import ReasoningFlow from "../agents/chat/ReasoningFlow";
 
 interface EnhancedChatTestProps {
-  messages: ChatMessage[];
+  chatMessages: ChatMessage[];  // Changed from messages to chatMessages
   reasoningTraces: ReasoningTrace[];
   onSendMessage: (message: string) => void;
 }
 
 const EnhancedChatTest = ({
-  messages,
+  chatMessages,  // Changed from messages to chatMessages
   reasoningTraces,
   onSendMessage
 }: EnhancedChatTestProps) => {
+  // Create a local reference to the messages to avoid changing it throughout the component
+  const messages = chatMessages;
   const [inputValue, setInputValue] = useState("");
   const [activeTab, setActiveTab] = useState<"chat" | "thoughts">("chat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -133,7 +135,7 @@ const EnhancedChatTest = ({
           
           <ScrollArea className="flex-1 p-4">
             <ReasoningFlow 
-              messages={chatMessages}
+              messages={messages}
               reasoningTraces={reasoningTraces} 
             />
           </ScrollArea>
