@@ -276,25 +276,7 @@ const ActionableChat = ({
             </div>
           </div>
           
-          {/* Action Options */}
-          {!selectedAction && (
-            <div className="px-4 py-3 border-t border-gray-200">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Available Actions</h3>
-              <div className="flex overflow-x-auto pb-2 gap-2">
-                {actionOptions.map((action) => (
-                  <Button
-                    key={action.id}
-                    variant="outline"
-                    className="flex items-center whitespace-nowrap"
-                    onClick={() => handleActionSelect(action)}
-                  >
-                    {action.icon}
-                    <span className="ml-2">{action.title}</span>
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Action Options are now handled by the parent component */}
           
           {/* Selected Action Form */}
           {selectedAction && (

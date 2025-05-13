@@ -21,6 +21,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import ActionableChat from "./ActionableChat";
 import ActionCard, { ActionType } from "./ActionCard";
+import AvailableActions from "./AvailableActions";
+import PolicyDetails from "./PolicyDetails";
+import ActionHistory from "./ActionHistory";
 import { ChatMessage, ReasoningTrace } from "@/lib/types";
 
 interface AgentActionChatProps {
@@ -145,6 +148,13 @@ const AgentActionChat: React.FC<AgentActionChatProps> = ({
     });
   };
   
+  const handleActionSelect = (actionId: string) => {
+    toast({
+      title: "Action Selected",
+      description: `Selected action: ${actionId}`,
+    });
+  };
+  
   const renderActionCards = () => {
     return mockActionHistory.map(action => (
       <ActionCard
@@ -257,11 +267,22 @@ const AgentActionChat: React.FC<AgentActionChatProps> = ({
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         {/* Main Chat Panel */}
         <ResizablePanel defaultSize={60} minSize={40}>
-          <ActionableChat 
-            messages={messages} 
-            reasoningTraces={reasoningTraces}
-            onSendMessage={onSendMessage}
-          />
+          <div className="flex flex-col h-full">
+            {/* Policy Details - Shown above the chat */}
+            <PolicyDetails />
+
+            {/* Available Actions */}
+            <AvailableActions onActionSelect={handleActionSelect} />
+
+            {/* Chat Interface */}
+            <div className="flex-1 overflow-hidden">
+              <ActionableChat 
+                messages={messages} 
+                reasoningTraces={reasoningTraces}
+                onSendMessage={onSendMessage}
+              />
+            </div>
+          </div>
         </ResizablePanel>
 
         <ResizableHandle withHandle />
