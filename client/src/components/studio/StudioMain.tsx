@@ -5,6 +5,8 @@ import EnhancedChatTest from "./EnhancedChatTest";
 import FlowView from "./FlowView";
 import PromptEditor from "./PromptEditor";
 import AgentActionChat from "../agents/chat/AgentActionChat";
+import AgentActionsView from "../agents/chat/AgentActionsView";
+import { availableActions, actionHistory } from "@/lib/mock-actions";
 
 interface StudioMainProps {
   chatMessages: ChatMessage[];
@@ -25,7 +27,7 @@ const StudioMain = ({
   onClosePromptEditor,
   agentName = "Accelerated UW Agent"
 }: StudioMainProps) => {
-  const [activeView, setActiveView] = useState<'chat' | 'enhanced' | 'flow' | 'actions'>('enhanced');
+  const [activeView, setActiveView] = useState<'chat' | 'enhanced' | 'flow' | 'actions' | 'agent-actions'>('enhanced');
   
   return (
     <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
@@ -43,13 +45,23 @@ const StudioMain = ({
         </button>
         <button 
           className={`px-3 py-1 rounded-md text-sm font-medium mr-2 ${
+            activeView === 'agent-actions' 
+              ? 'bg-neutrinos-blue text-white' 
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+          onClick={() => setActiveView('agent-actions')}
+        >
+          Agent Actions
+        </button>
+        <button 
+          className={`px-3 py-1 rounded-md text-sm font-medium mr-2 ${
             activeView === 'actions' 
               ? 'bg-neutrinos-blue text-white' 
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
           onClick={() => setActiveView('actions')}
         >
-          Agent Actions
+          Action Chat
         </button>
         <button 
           className={`px-3 py-1 rounded-md text-sm font-medium mr-2 ${
@@ -75,7 +87,16 @@ const StudioMain = ({
       
       {/* Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        {activeView === 'actions' ? (
+        {activeView === 'agent-actions' ? (
+          <AgentActionsView
+            availableActions={availableActions}
+            actionHistory={actionHistory}
+            onSelectAction={(action) => console.log('Selected action:', action)}
+            onCreateAction={() => console.log('Create new action')}
+            onExportHistory={() => console.log('Export history')}
+            onApprove={(actionId) => console.log('Approve action:', actionId)}
+          />
+        ) : activeView === 'actions' ? (
           <AgentActionChat
             agentName={agentName}
             messages={chatMessages}
