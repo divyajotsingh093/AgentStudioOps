@@ -27,7 +27,7 @@ const EditToolPage: React.FC = () => {
     mutationFn: async (data: FormValues) => {
       return apiRequest(`/api/tools/${toolId}`, {
         method: 'PUT',
-        data,
+        data: data,
       });
     },
     onSuccess: () => {

@@ -128,7 +128,11 @@ const ToolForm: React.FC<ToolFormProps> = ({
                       <Textarea
                         placeholder="Describe what this tool does..."
                         className="min-h-24"
-                        {...field}
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
                       />
                     </FormControl>
                     <FormDescription>
