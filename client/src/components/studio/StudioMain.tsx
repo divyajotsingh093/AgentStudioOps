@@ -90,7 +90,7 @@ const StudioMain = ({
           />
         ) : activeView === 'enhanced' ? (
           <EnhancedChatTest
-            messages={chatMessages}
+            chatMessages={chatMessages}
             reasoningTraces={reasoningTraces}
             onSendMessage={onSendMessage}
           />
