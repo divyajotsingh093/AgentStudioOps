@@ -203,7 +203,7 @@ export default function DataFabricDashboard() {
             </CardHeader>
             <CardContent className="h-[300px] flex items-center justify-center bg-gray-50">
               <div className="text-center">
-                <Circuit className="h-16 w-16 mx-auto text-neutrinos-blue/30 mb-4" />
+                <CircuitBoard className="h-16 w-16 mx-auto text-neutrinos-blue/30 mb-4" />
                 <p className="text-gray-500">Interactive data fabric visualization</p>
                 <p className="text-xs text-gray-400 mt-1">Connect more data sources to enhance your visualization</p>
               </div>

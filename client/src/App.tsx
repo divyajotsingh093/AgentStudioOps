@@ -16,6 +16,9 @@ import DataSourcesPage from "@/pages/data-sources";
 import DataSourceDetail from "@/pages/data-sources/[id]";
 import DataConnectorsPage from "@/pages/data-sources/connectors";
 import ConnectorDetailPage from "@/pages/data-sources/connectors/[id]";
+import DataFabricDashboard from "@/pages/data-fabric";
+import DataModelsIndex from "@/pages/data-fabric/models";
+import DataPoliciesIndex from "@/pages/data-fabric/policies";
 
 function Router() {
   return (
@@ -29,10 +32,18 @@ function Router() {
         <Route path="/dashboard" component={RunDashboard} />
         <Route path="/runs/:id" component={RunDetail} />
         <Route path="/governance" component={GovernanceLog} />
+        
+        {/* Data Sources & Connectors */}
         <Route path="/data-sources" component={DataSourcesPage} />
         <Route path="/data-sources/connectors" component={DataConnectorsPage} />
         <Route path="/data-sources/connectors/:id" component={ConnectorDetailPage} />
         <Route path="/data-sources/:id" component={DataSourceDetail} />
+        
+        {/* Data Fabric */}
+        <Route path="/data-fabric" component={DataFabricDashboard} />
+        <Route path="/data-fabric/models" component={DataModelsIndex} />
+        <Route path="/data-fabric/policies" component={DataPoliciesIndex} />
+        
         <Route component={NotFound} />
       </Switch>
     </MainLayout>

@@ -9,6 +9,7 @@ import {
   Database,
   Settings,
   Puzzle,
+  CircuitBoard,
   LucideIcon
 } from "lucide-react";
 import Logo from "../ui/logo";
@@ -65,6 +66,7 @@ const Sidebar = () => {
           <SidebarItem href="/dashboard" icon={Activity} label="Run Dashboard" active={isActive("/dashboard")} />
           <SidebarItem href="/governance" icon={Shield} label="Governance" active={isActive("/governance")} />
           <SidebarItem href="/data-sources" icon={Database} label="Data Sources" active={isActive("/data-sources")} />
+          <SidebarItem href="/data-fabric" icon={CircuitBoard} label="Data Fabric" active={isActive("/data-fabric")} />
           <SidebarItem href="/settings" icon={Settings} label="Settings" active={isActive("/settings")} />
         </ul>
       </nav>
