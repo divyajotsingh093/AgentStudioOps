@@ -11,7 +11,7 @@ import AgentCapabilitiesView from '../capabilities/AgentCapabilitiesView';
 import { AgentAction, ActionHistoryItem } from '@/lib/mock-actions';
 import { AgentCapability, RuleDefinition, LogicFlow } from '@/lib/mock-capabilities';
 import { useViewport } from '@/hooks/use-viewport';
-import ResponsiveContainer from '@/components/layout/ResponsiveContainer';
+import { ResponsiveContainer } from '@/components/layout/ResponsiveContainer';
 
 // Initial mock data for components
 const initialComponents: AgentComponent[] = [
