@@ -13,28 +13,32 @@ interface AgentCardProps {
 export const AgentCard: React.FC<AgentCardProps> = ({ agent }) => {
   return (
     <Link href={`/agents/${agent.id}`}>
-      <Card className="h-full transition-all hover:shadow-md cursor-pointer relative overflow-hidden">
+      <Card className="h-full transition-all hover:shadow-md cursor-pointer relative overflow-hidden border border-gray-200">
         {/* Active status indicator */}
         {agent.isActive && (
-          <div className="absolute top-4 right-4 w-3 h-3 bg-green-500 rounded-full"></div>
+          <div className="absolute top-4 right-4 w-3 h-3 bg-green-500 rounded-full shadow-sm"></div>
         )}
         
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold">{agent.name}</CardTitle>
-          <CardDescription className="text-gray-600">{agent.description}</CardDescription>
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-xl font-bold text-gray-900">{agent.name}</CardTitle>
+          <CardDescription className="text-gray-600 mt-1">{agent.description}</CardDescription>
         </CardHeader>
         
-        <CardContent className="pb-2">
+        <CardContent className="px-4 py-2">
           <div className="flex flex-wrap gap-2">
             {agent.type.map((type) => (
-              <Badge key={type} variant="secondary" className={getAgentTypeBadgeColor(type)}>
+              <Badge 
+                key={type} 
+                variant="outline" 
+                className={`font-medium py-1 px-3 rounded-full ${getAgentTypeBadgeColor(type)}`}
+              >
                 {getAgentTypeDisplay(type)}
               </Badge>
             ))}
           </div>
         </CardContent>
         
-        <CardFooter className="flex justify-between items-center pt-2 text-sm text-gray-500">
+        <CardFooter className="flex justify-between items-center px-4 py-3 border-t border-gray-100 bg-gray-50/50 text-sm text-gray-500">
           <div>Updated {getTimeAgo(agent.updatedAt)}</div>
           <div className="font-medium">Open</div>
         </CardFooter>

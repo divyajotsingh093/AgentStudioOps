@@ -184,10 +184,10 @@ export function getAgentTypeDisplay(type: string): string {
 
 export function getAgentTypeBadgeColor(type: string): string {
   const colorMap: Record<string, string> = {
-    'UW': 'bg-blue-100 text-blue-800',
-    'Claims': 'bg-purple-100 text-purple-800',
-    'Service': 'bg-indigo-100 text-indigo-800',
-    'Fraud': 'bg-red-100 text-red-800'
+    'UW': 'bg-blue-50 text-blue-700 hover:bg-blue-100',
+    'Claims': 'bg-purple-50 text-purple-700 hover:bg-purple-100',
+    'Service': 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100',
+    'Fraud': 'bg-red-50 text-red-700 hover:bg-red-100'
   };
   
   return colorMap[type] || 'bg-gray-100 text-gray-800';
