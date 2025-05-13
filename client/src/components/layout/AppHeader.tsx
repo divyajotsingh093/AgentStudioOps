@@ -14,10 +14,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ children }) => {
     <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
       <div className="h-16 px-6 flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Link href="/">
-            <a className="flex items-center">
-              <Logo size="sm" />
-            </a>
+          <Link href="/" className="flex items-center">
+            <Logo size="sm" />
           </Link>
         </div>
 

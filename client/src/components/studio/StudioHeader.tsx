@@ -49,13 +49,11 @@ const StudioHeader = ({
       <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Link href="/">
-              <a className="mr-3 text-gray-500 hover:text-gray-700">
-                <ArrowLeft className="h-5 w-5" />
-              </a>
+            <Link href="/" className="mr-3 text-gray-500 hover:text-gray-700">
+              <ArrowLeft className="h-5 w-5" />
             </Link>
             <h1 className="text-xl font-semibold">{agentName}</h1>
-            <Badge className="ml-3 bg-blue-100 text-blue-700" variant="outline">
+            <Badge className="ml-3 bg-neutrinos-blue/10 text-neutrinos-blue" variant="outline">
               {agentType}
             </Badge>
           </div>

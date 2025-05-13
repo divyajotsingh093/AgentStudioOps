@@ -4,6 +4,7 @@ import StudioHeader from "@/components/studio/StudioHeader";
 import StudioSidebar from "@/components/studio/StudioSidebar";
 import StudioMain from "@/components/studio/StudioMain";
 import AppHeader from "@/components/layout/AppHeader";
+import { Badge } from "@/components/ui/badge";
 import AgentOverview from "@/components/agents/builder/AgentOverview";
 import AgentMetrics from "@/components/agents/builder/AgentMetrics";
 import AgentEvalQA from "@/components/agents/builder/AgentEvalQA";
@@ -95,6 +96,13 @@ const AgentStudio = () => {
   
   return (
     <div className="h-full flex flex-col">
+      <AppHeader>
+        <div className="flex items-center space-x-2">
+          <span className="text-lg font-medium text-gray-800">{agent.name}</span>
+          <Badge className="bg-blue-100 text-blue-700">{agent.type[0]}</Badge>
+        </div>
+      </AppHeader>
+      
       <StudioHeader 
         agentName={agent.name}
         agentType={agent.type[0]}
