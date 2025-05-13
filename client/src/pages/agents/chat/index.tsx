@@ -85,14 +85,16 @@ const mockHistory: ActionHistoryItem[] = [
   {
     id: 'hist1',
     name: 'Customer Query Results',
-    timestamp: '04/30/2024',
-    result: 'POL-23456 - Life - Whole - Pending'
+    timestamp: new Date(2024, 3, 30, 14, 23), // April 30, 2024, 14:23
+    result: 'POL-23456 - Life - Whole - Pending',
+    status: 'success'
   },
   {
     id: 'hist2',
     name: 'Policy Verification',
-    timestamp: '04/30/2024',
-    result: 'Status: Active, Coverage: $500,000, Term: 30 years'
+    timestamp: new Date(2024, 3, 30, 15, 45), // April 30, 2024, 15:45
+    result: 'Status: Active, Coverage: $500,000, Term: 30 years',
+    status: 'success'
   }
 ];
 
