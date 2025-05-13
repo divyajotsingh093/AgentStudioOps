@@ -27,6 +27,11 @@ const AgentStudio = () => {
   const [collaborationPanelOpen, setCollaborationPanelOpen] = useState(false);
   const { toast } = useToast();
   
+  // Function to toggle the collaboration panel
+  const toggleCollaborationPanel = () => {
+    setCollaborationPanelOpen(prev => !prev);
+  };
+  
   useEffect(() => {
     // Find agent by ID
     const foundAgent = agents.find(agent => agent.id === id);
@@ -111,6 +116,16 @@ const AgentStudio = () => {
         activeTab={activeTab}
         onTabChange={handleTabChange}
       />
+      
+      {/* Collaboration Panel */}
+      {id && (
+        <CollaborationPanel 
+          agentId={id}
+          userName="Current User"
+          isExpanded={collaborationPanelOpen}
+          onToggleExpand={toggleCollaborationPanel}
+        />
+      )}
       
       <div className="flex-1 flex overflow-hidden">
         {activeTab === 'Overview' && (

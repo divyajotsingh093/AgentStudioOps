@@ -10,7 +10,8 @@ import {
   GitCompare, 
   Network, 
   Wrench, 
-  Settings 
+  Settings,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,13 +23,15 @@ interface StudioHeaderProps {
   agentType: string;
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onToggleCollaboration?: () => void;
 }
 
 const StudioHeader = ({ 
   agentName, 
   agentType,
   activeTab,
-  onTabChange
+  onTabChange,
+  onToggleCollaboration
 }: StudioHeaderProps) => {
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   
@@ -59,6 +62,13 @@ const StudioHeader = ({
           </div>
           
           <div className="flex items-center space-x-3">
+            <Button 
+              variant="outline" 
+              onClick={onToggleCollaboration}
+              className="flex items-center space-x-2"
+            >
+              <Users className="h-4 w-4 mr-1" /> Collaborate
+            </Button>
             <Button variant="ghost" size="icon">
               <HelpCircle className="h-5 w-5 text-gray-500" />
             </Button>
