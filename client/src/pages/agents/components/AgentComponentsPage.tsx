@@ -47,6 +47,7 @@ interface DocumentModel {
     processingSpeed: string;
     fieldAccuracy: string;
     entityRecognition: string[];
+    lastUpdated: string;
   };
 }
 
@@ -153,7 +154,8 @@ const mockModels: ComponentModel[] = [
       documentTypes: ['Medical Labs', 'Diagnoses', 'Treatments'],
       processingSpeed: '3-5 seconds per page',
       fieldAccuracy: '96.7%',
-      entityRecognition: ['Medical terms', 'Measurements', 'Dates', 'Doctor names']
+      entityRecognition: ['Medical terms', 'Measurements', 'Dates', 'Doctor names'],
+      lastUpdated: 'Apr 28, 2025'
     }
   },
   {
