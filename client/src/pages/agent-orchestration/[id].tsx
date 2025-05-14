@@ -1,448 +1,654 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { useRoute, useLocation, Link } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation, useParams, Link } from "wouter";
+import { Network, Save, Play, ArrowLeft, Settings, Code, Undo, Download, Share2 } from "lucide-react";
+import { Helmet } from "react-helmet";
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
   Panel,
+  useNodesState,
+  useEdgesState,
   addEdge,
-  applyNodeChanges,
-  applyEdgeChanges,
+  Connection,
+  Edge,
+  Node,
+  NodeTypes,
+  EdgeTypes,
+  MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
+
+// UI Components
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { ArrowLeft, Save, PlayCircle, PauseCircle, LayoutGrid, Settings, Clock, PanelRightClose, PanelRightOpen } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// Custom node types will be implemented here
-const nodeTypes = {};
+// Custom node components
+const TriggerNode = ({ data, selected }: any) => (
+  <div className={`px-4 py-2 rounded-lg border-2 ${selected ? 'border-blue-500' : 'border-gray-300'} bg-gray-50 dark:bg-gray-800`}>
+    <div className="flex items-center">
+      <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900">
+        <Play className="h-4 w-4 text-amber-500" />
+      </div>
+      <h4 className="ml-2 font-medium">{data.label}</h4>
+    </div>
+    <div className="text-xs text-gray-500 mt-2">{data.description || "Trigger node"}</div>
+  </div>
+);
 
-export default function AgentOrchestrationFlow() {
-  const [match, params] = useRoute("/agent-orchestration/:id");
-  const [_, navigate] = useLocation();
+const AgentNode = ({ data, selected }: any) => (
+  <div className={`px-4 py-2 rounded-lg border-2 ${selected ? 'border-blue-500' : 'border-gray-300'} bg-gray-50 dark:bg-gray-800`}>
+    <div className="flex items-center">
+      <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900">
+        <Settings className="h-4 w-4 text-blue-500" />
+      </div>
+      <h4 className="ml-2 font-medium">{data.label}</h4>
+    </div>
+    <div className="text-xs text-gray-500 mt-2">{data.description || "Agent node"}</div>
+  </div>
+);
+
+const ToolNode = ({ data, selected }: any) => (
+  <div className={`px-4 py-2 rounded-lg border-2 ${selected ? 'border-blue-500' : 'border-gray-300'} bg-gray-50 dark:bg-gray-800`}>
+    <div className="flex items-center">
+      <div className="p-2 rounded-full bg-green-100 dark:bg-green-900">
+        <Code className="h-4 w-4 text-green-500" />
+      </div>
+      <h4 className="ml-2 font-medium">{data.label}</h4>
+    </div>
+    <div className="text-xs text-gray-500 mt-2">{data.description || "Tool node"}</div>
+  </div>
+);
+
+const nodeTypes: NodeTypes = {
+  trigger: TriggerNode,
+  agent: AgentNode,
+  tool: ToolNode,
+};
+
+type FlowData = {
+  id: number;
+  name: string;
+  description: string | null;
+  status: string;
+  version: string;
+  tags: string[] | null;
+  createdAt: string;
+  updatedAt: string;
+  nodes: Node[];
+  edges: Edge[];
+};
+
+type FlowNode = {
+  id: string;
+  flowId: number;
+  nodeType: string;
+  data: object;
+  position: { x: number, y: number };
+  createdAt: string;
+  updatedAt: string;
+};
+
+type FlowEdge = {
+  id: string;
+  flowId: number;
+  source: string;
+  target: string;
+  data: object;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export default function FlowEditor() {
+  const params = useParams<{ id: string }>();
+  const flowId = Number(params.id);
+  const [, navigate] = useLocation();
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
-  const [nodes, setNodes] = useState([]);
-  const [edges, setEdges] = useState([]);
-  const [isPanelOpen, setIsPanelOpen] = useState(true);
-  const reactFlowWrapper = useRef(null);
-  const [reactFlowInstance, setReactFlowInstance] = useState(null);
-
-  // Fetch flow details
-  const { data: flow, isLoading: isFlowLoading, error: flowError } = useQuery({
-    queryKey: [`/api/flows/${params?.id}`],
-    enabled: !!params?.id,
+  const { toast } = useToast();
+  
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [activeTab, setActiveTab] = useState("canvas");
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [nodeFormData, setNodeFormData] = useState({
+    label: "",
+    description: "",
+    nodeType: "agent",
   });
 
-  // Fetch nodes for this flow
-  const { data: flowNodes, isLoading: isNodesLoading } = useQuery({
-    queryKey: [`/api/flows/${params?.id}/nodes`],
-    enabled: !!params?.id,
+  // Fetch flow data
+  const { data: flowData, isLoading, isError } = useQuery<FlowData>({
+    queryKey: ['/api/flows', flowId],
+    retry: 1,
   });
 
-  // Fetch edges for this flow
-  const { data: flowEdges, isLoading: isEdgesLoading } = useQuery({
-    queryKey: [`/api/flows/${params?.id}/edges`],
-    enabled: !!params?.id,
-  });
-
-  // Fetch execution history
-  const { data: executions, isLoading: isExecutionsLoading } = useQuery({
-    queryKey: [`/api/flows/${params?.id}/executions`],
-    enabled: !!params?.id,
-  });
-
-  // Prepare nodes and edges when data is loaded
-  useEffect(() => {
-    if (flowNodes) {
-      setNodes(flowNodes.map((node) => ({
-        id: node.id.toString(),
-        type: node.type,
-        position: { x: node.positionX, y: node.positionY },
-        data: { 
-          label: node.label,
-          type: node.type,
-          configuration: node.configuration
+  // Update flow mutation
+  const updateFlowMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/flows/${flowId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      })));
-    }
-    
-    if (flowEdges) {
-      setEdges(flowEdges.map((edge) => ({
-        id: edge.id.toString(),
-        source: edge.sourceId.toString(),
-        target: edge.targetId.toString(),
-        label: edge.label,
-        type: edge.type,
-        animated: true,
-        data: {
-          condition: edge.condition
-        }
-      })));
-    }
-  }, [flowNodes, flowEdges]);
-
-  // Handle node changes
-  const onNodesChange = useCallback((changes) => {
-    setNodes((nds) => applyNodeChanges(changes, nds));
-  }, []);
-
-  // Handle edge changes  
-  const onEdgesChange = useCallback((changes) => {
-    setEdges((eds) => applyEdgeChanges(changes, eds));
-  }, []);
-
-  // Handle connections between nodes
-  const onConnect = useCallback((connection) => {
-    const newEdge = {
-      ...connection,
-      animated: true,
-      data: { condition: {} }
-    };
-    setEdges((eds) => addEdge(newEdge, eds));
-  }, []);
-
-  // Handle save flow
-  const saveFlowMutation = useMutation({
-    mutationFn: (data) => {
-      return apiRequest(`/api/flows/${params?.id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          nodes,
+          edges,
+        }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update flow');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/flows/${params?.id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/flows', flowId] });
+      setIsDirty(false);
       toast({
         title: "Flow saved",
-        description: "The flow has been saved successfully.",
+        description: "Your flow has been saved successfully.",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Could not save flow. Please try again.",
+        description: "Failed to save the flow. Please try again.",
         variant: "destructive",
       });
-    },
+    }
   });
 
-  // Handle save
-  const handleSave = () => {
-    if (!flow) return;
-    
-    const nodeData = nodes.map(node => ({
-      id: parseInt(node.id),
-      flowId: parseInt(params?.id),
-      type: node.data.type,
-      label: node.data.label,
-      positionX: node.position.x,
-      positionY: node.position.y,
-      configuration: node.data.configuration
-    }));
-    
-    const edgeData = edges.map(edge => ({
-      id: edge.id.includes('-') ? null : parseInt(edge.id), // New edges don't have numeric IDs
-      flowId: parseInt(params?.id),
-      sourceId: parseInt(edge.source),
-      targetId: parseInt(edge.target),
-      type: edge.type || 'default',
-      label: edge.label || '',
-      condition: edge.data?.condition || {}
-    }));
-    
-    saveFlowMutation.mutate({
-      nodes: nodeData,
-      edges: edgeData
-    });
-  };
-
-  // Handle flow execution
+  // Execute flow mutation
   const executeFlowMutation = useMutation({
-    mutationFn: () => {
-      return apiRequest(`/api/flows/${params?.id}/execute`, {
-        method: "POST"
+    mutationFn: async () => {
+      const response = await fetch(`/api/flows/${flowId}/execute`, {
+        method: 'POST',
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to execute flow');
+      }
+      
+      return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/flows/${params?.id}/executions`] });
       toast({
         title: "Flow execution started",
-        description: `Execution ID: ${data.id}`,
+        description: `Execution ID: ${data.executionId}`,
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Could not execute flow. Please try again.",
+        description: "Failed to execute the flow. Please try again.",
         variant: "destructive",
       });
-    },
+    }
   });
 
-  // Toggle flow active status
-  const toggleFlowStatusMutation = useMutation({
-    mutationFn: (newStatus) => {
-      return apiRequest(`/api/flows/${params?.id}/status`, {
-        method: "PUT",
-        body: JSON.stringify({ status: newStatus }),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/flows/${params?.id}`] });
-      toast({
-        title: "Status updated",
-        description: `Flow status has been updated.`,
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Could not update flow status. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  // Load flow data
+  useEffect(() => {
+    if (flowData) {
+      if (flowData.nodes && flowData.nodes.length > 0) {
+        setNodes(flowData.nodes);
+      }
+      
+      if (flowData.edges && flowData.edges.length > 0) {
+        setEdges(flowData.edges);
+      }
+    }
+  }, [flowData, setNodes, setEdges]);
 
-  if (isFlowLoading || isNodesLoading || isEdgesLoading) {
+  // Handle node selection
+  const onNodeClick = useCallback((_, node) => {
+    setSelectedNode(node);
+    setSelectedEdge(null);
+    
+    setNodeFormData({
+      label: node.data.label || "",
+      description: node.data.description || "",
+      nodeType: node.type || "agent",
+    });
+    
+    setActiveTab("properties");
+  }, []);
+
+  // Handle edge selection
+  const onEdgeClick = useCallback((_, edge) => {
+    setSelectedEdge(edge);
+    setSelectedNode(null);
+    setActiveTab("properties");
+  }, []);
+
+  // Handle pane click (deselect)
+  const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
+    setSelectedEdge(null);
+  }, []);
+
+  // Handle node changes
+  const handleNodeDataChange = (key: string, value: string) => {
+    if (!selectedNode) return;
+    
+    const updatedNodes = nodes.map(node => {
+      if (node.id === selectedNode.id) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            [key]: value,
+          },
+        };
+      }
+      return node;
+    });
+    
+    setNodes(updatedNodes);
+    setIsDirty(true);
+  };
+
+  // Handle node type change
+  const handleNodeTypeChange = (value: string) => {
+    if (!selectedNode) return;
+    
+    const updatedNodes = nodes.map(node => {
+      if (node.id === selectedNode.id) {
+        return {
+          ...node,
+          type: value,
+        };
+      }
+      return node;
+    });
+    
+    setNodes(updatedNodes);
+    setNodeFormData({
+      ...nodeFormData,
+      nodeType: value,
+    });
+    setIsDirty(true);
+  };
+
+  // Handle new connections
+  const onConnect = useCallback((params: Connection) => {
+    const newEdge = {
+      ...params,
+      id: `edge-${params.source}-${params.target}`,
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+      },
+      data: { label: 'Connection' },
+    };
+    
+    setEdges((eds) => addEdge(newEdge, eds));
+    setIsDirty(true);
+  }, [setEdges]);
+
+  // Add new node
+  const addNode = (type: string) => {
+    const newNode = {
+      id: `node-${Date.now()}`,
+      type,
+      position: { x: 250, y: 250 },
+      data: { 
+        label: `New ${type} node`,
+        description: `Description for ${type} node`,
+      },
+    };
+    
+    setNodes((nds) => [...nds, newNode]);
+    setIsDirty(true);
+  };
+
+  // Save flow
+  const saveFlow = () => {
+    updateFlowMutation.mutate();
+  };
+
+  // Execute flow
+  const executeFlow = () => {
+    executeFlowMutation.mutate();
+  };
+  
+  // Delete selected element
+  const deleteSelected = () => {
+    if (selectedNode) {
+      setNodes((nds) => nds.filter((node) => node.id !== selectedNode.id));
+      setEdges((eds) => eds.filter((edge) => 
+        edge.source !== selectedNode.id && edge.target !== selectedNode.id
+      ));
+      setSelectedNode(null);
+    }
+    
+    if (selectedEdge) {
+      setEdges((eds) => eds.filter((edge) => edge.id !== selectedEdge.id));
+      setSelectedEdge(null);
+    }
+    
+    setIsDirty(true);
+  };
+
+  if (isLoading) {
     return (
-      <div className="container mx-auto py-10">
-        <div className="flex items-center mb-6">
-          <h1 className="text-3xl font-bold">Loading flow...</h1>
+      <div className="container mx-auto p-4 space-y-6">
+        <div className="flex items-center space-x-2">
+          <Network className="h-6 w-6" />
+          <h1 className="text-2xl font-bold">Loading Flow...</h1>
         </div>
-        <div className="h-[calc(100vh-200px)] animate-pulse bg-gray-100 rounded-md"></div>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        </div>
       </div>
     );
   }
 
-  if (flowError || !flow) {
+  if (isError || !flowData) {
     return (
-      <div className="container mx-auto py-10">
-        <div className="flex items-center mb-6">
-          <Link href="/agent-orchestration">
-            <Button variant="ghost" className="mr-4">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </Link>
-          <h1 className="text-3xl font-bold">Flow Not Found</h1>
+      <div className="container mx-auto p-4 space-y-6">
+        <div className="flex items-center space-x-2">
+          <Network className="h-6 w-6" />
+          <h1 className="text-2xl font-bold">Error Loading Flow</h1>
         </div>
-        <Card>
-          <CardContent className="p-6">
-            <p>The requested flow could not be found or you don't have permission to view it.</p>
-            <Link href="/agent-orchestration">
-              <Button className="mt-4">Return to Flows</Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <div className="flex justify-center items-center h-64">
+          <div className="text-red-500">Failed to load flow data. Please try again.</div>
+        </div>
+        <div className="flex justify-center">
+          <Button onClick={() => navigate('/agent-orchestration')}>
+            Return to Flows
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container-fluid px-4 py-4 h-screen flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
-          <Link href="/agent-orchestration">
-            <Button variant="ghost" className="mr-4">
+    <>
+      <Helmet>
+        <title>{flowData.name} | Agent Orchestration | Neutrinos AI Agent Studio</title>
+        <meta name="description" content={`Edit and manage the ${flowData.name} agent orchestration flow`} />
+      </Helmet>
+      
+      <div className="container mx-auto p-4 h-screen flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/agent-orchestration')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
-          </Link>
-          <h1 className="text-2xl font-bold">{flow.name}</h1>
-          <div className="ml-4 bg-gray-100 px-2 py-1 rounded text-sm text-gray-700">
-            {flow.status}
+            <Network className="h-6 w-6" />
+            <h1 className="text-2xl font-bold">{flowData.name}</h1>
+            <Badge className="ml-2">{flowData.status}</Badge>
+            <Badge variant="outline" className="ml-1">v{flowData.version}</Badge>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant={flow.status === "Active" ? "destructive" : "default"}
-            size="sm"
-            onClick={() => toggleFlowStatusMutation.mutate(flow.status === "Active" ? "Draft" : "Active")}
-          >
-            {flow.status === "Active" ? (
-              <>
-                <PauseCircle className="h-4 w-4 mr-2" />
-                Deactivate
-              </>
-            ) : (
-              <>
-                <PlayCircle className="h-4 w-4 mr-2" />
-                Activate
-              </>
-            )}
-          </Button>
-          <Button 
-            size="sm"
-            onClick={() => executeFlowMutation.mutate()}
-            disabled={flow.status !== "Active"}
-          >
-            <PlayCircle className="h-4 w-4 mr-2" />
-            Execute
-          </Button>
-          <Button 
-            variant="secondary" 
-            size="sm"
-            onClick={handleSave}
-            disabled={saveFlowMutation.isPending}
-          >
-            {saveFlowMutation.isPending ? (
-              <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-3 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Saving...
-              </span>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Save
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-      
-      <div className="flex-grow flex">
-        <div className={`flex-grow relative border rounded-md overflow-hidden transition-all ${isPanelOpen ? 'mr-80' : ''}`}>
-          <div className="h-full" ref={reactFlowWrapper}>
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              nodeTypes={nodeTypes}
-              fitView
-              attributionPosition="bottom-left"
-              onInit={setReactFlowInstance}
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={executeFlow} 
+              disabled={executeFlowMutation.isPending || updateFlowMutation.isPending}
             >
-              <Background />
-              <Controls />
-              <MiniMap />
-              <Panel position="top-right">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="bg-white"
-                  onClick={() => setIsPanelOpen(!isPanelOpen)}
-                >
-                  {isPanelOpen ? (
-                    <PanelRightClose className="h-4 w-4" />
-                  ) : (
-                    <PanelRightOpen className="h-4 w-4" />
-                  )}
+              <Play className="h-4 w-4 mr-2" />
+              Execute Flow
+            </Button>
+            <Button 
+              onClick={saveFlow} 
+              disabled={!isDirty || updateFlowMutation.isPending}
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Save Changes
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Settings className="h-4 w-4" />
                 </Button>
-              </Panel>
-            </ReactFlow>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setActiveTab("canvas")}>
+                  <Network className="h-4 w-4 mr-2" />
+                  Canvas View
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("properties")}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Properties
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Flow
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share Flow
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-red-500" onClick={deleteSelected}>
+                  Delete Selected
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         
-        {isPanelOpen && (
-          <div className="w-80 border-l overflow-auto h-full">
-            <Tabs defaultValue="nodes">
-              <TabsList className="w-full">
-                <TabsTrigger value="nodes" className="flex-1">
-                  <LayoutGrid className="h-4 w-4 mr-2" />
-                  Nodes
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="flex-1">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </TabsTrigger>
-                <TabsTrigger value="executions" className="flex-1">
-                  <Clock className="h-4 w-4 mr-2" />
-                  History
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="nodes" className="p-4">
-                <h3 className="text-lg font-medium mb-3">Add Node</h3>
-                <div className="space-y-3">
-                  <Card className="cursor-grab">
-                    <CardHeader className="p-3">
-                      <CardTitle className="text-sm">Agent Node</CardTitle>
-                    </CardHeader>
-                  </Card>
-                  <Card className="cursor-grab">
-                    <CardHeader className="p-3">
-                      <CardTitle className="text-sm">Tool Node</CardTitle>
-                    </CardHeader>
-                  </Card>
-                  <Card className="cursor-grab">
-                    <CardHeader className="p-3">
-                      <CardTitle className="text-sm">Condition Node</CardTitle>
-                    </CardHeader>
-                  </Card>
-                  <Card className="cursor-grab">
-                    <CardHeader className="p-3">
-                      <CardTitle className="text-sm">Input Node</CardTitle>
-                    </CardHeader>
-                  </Card>
-                  <Card className="cursor-grab">
-                    <CardHeader className="p-3">
-                      <CardTitle className="text-sm">Output Node</CardTitle>
-                    </CardHeader>
-                  </Card>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <div className="border-b flex justify-between items-center">
+            <TabsList>
+              <TabsTrigger value="canvas">Canvas</TabsTrigger>
+              <TabsTrigger value="properties">Properties</TabsTrigger>
+              <TabsTrigger value="executions">Executions</TabsTrigger>
+            </TabsList>
+            
+            <div className="py-2 px-4 space-x-2">
+              <Button variant="outline" size="sm" onClick={() => addNode('trigger')}>Add Trigger</Button>
+              <Button variant="outline" size="sm" onClick={() => addNode('agent')}>Add Agent</Button>
+              <Button variant="outline" size="sm" onClick={() => addNode('tool')}>Add Tool</Button>
+            </div>
+          </div>
+          
+          <TabsContent value="canvas" className="flex-1 relative overflow-hidden">
+            <div className="w-full h-full" ref={reactFlowWrapper}>
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onNodeClick={onNodeClick}
+                onEdgeClick={onEdgeClick}
+                onPaneClick={onPaneClick}
+                nodeTypes={nodeTypes}
+                fitView
+              >
+                <Background />
+                <Controls />
+                <MiniMap />
+              </ReactFlow>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="properties" className="flex-1">
+            <div className="p-4 h-full overflow-auto">
+              {!selectedNode && !selectedEdge ? (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <Settings className="h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-gray-500">Select a node or edge to edit its properties</p>
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="settings" className="p-4">
-                <h3 className="text-lg font-medium mb-3">Flow Settings</h3>
+              ) : selectedNode ? (
                 <Card>
-                  <CardContent className="p-4">
-                    <p className="text-sm text-gray-500">Flow ID: {params?.id}</p>
-                    <p className="text-sm text-gray-500">Created At: {new Date(flow.createdAt).toLocaleString()}</p>
-                    <p className="text-sm text-gray-500">Status: {flow.status}</p>
-                    <div className="mt-4">
-                      <h4 className="text-sm font-medium mb-2">Description</h4>
-                      <p className="text-sm">{flow.description}</p>
+                  <CardHeader>
+                    <CardTitle>Node Properties</CardTitle>
+                    <CardDescription>
+                      Edit the properties of this node
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="node-type">Node Type</Label>
+                      <Select 
+                        value={nodeFormData.nodeType} 
+                        onValueChange={handleNodeTypeChange}
+                      >
+                        <SelectTrigger id="node-type">
+                          <SelectValue placeholder="Select node type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="trigger">Trigger</SelectItem>
+                          <SelectItem value="agent">Agent</SelectItem>
+                          <SelectItem value="tool">Tool</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="node-label">Label</Label>
+                      <Input 
+                        id="node-label" 
+                        value={nodeFormData.label} 
+                        onChange={(e) => {
+                          setNodeFormData({...nodeFormData, label: e.target.value});
+                          handleNodeDataChange('label', e.target.value);
+                        }} 
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="node-description">Description</Label>
+                      <Textarea 
+                        id="node-description" 
+                        value={nodeFormData.description} 
+                        onChange={(e) => {
+                          setNodeFormData({...nodeFormData, description: e.target.value});
+                          handleNodeDataChange('description', e.target.value);
+                        }} 
+                      />
+                    </div>
+                    
+                    {/* Node-type specific properties would go here */}
+                    
+                    <div className="pt-4">
+                      <Button 
+                        variant="destructive" 
+                        onClick={deleteSelected}
+                        className="w-full"
+                      >
+                        Delete Node
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
-              
-              <TabsContent value="executions" className="p-4">
-                <h3 className="text-lg font-medium mb-3">Execution History</h3>
-                {isExecutionsLoading ? (
-                  <p>Loading execution history...</p>
-                ) : executions?.length > 0 ? (
-                  <div className="space-y-3">
-                    {executions.map((execution) => (
-                      <Card key={execution.id}>
-                        <CardContent className="p-3">
-                          <div className="flex justify-between items-center">
-                            <span className={`px-2 py-0.5 rounded text-xs ${
-                              execution.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                              execution.status === 'Failed' ? 'bg-red-100 text-red-800' :
-                              'bg-blue-100 text-blue-800'
-                            }`}>
-                              {execution.status}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {new Date(execution.startedAt).toLocaleString()}
-                            </span>
-                          </div>
-                          {execution.completedAt && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              Duration: {Math.round((new Date(execution.completedAt) - new Date(execution.startedAt)) / 1000)}s
-                            </p>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Edge Properties</CardTitle>
+                    <CardDescription>
+                      Edit the properties of this connection
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edge-label">Label</Label>
+                      <Input 
+                        id="edge-label" 
+                        value={selectedEdge?.data?.label || ""} 
+                        onChange={(e) => {
+                          setEdges(eds => eds.map(edge => {
+                            if (edge.id === selectedEdge?.id) {
+                              return {
+                                ...edge,
+                                data: { ...edge.data, label: e.target.value },
+                              };
+                            }
+                            return edge;
+                          }));
+                          setIsDirty(true);
+                        }} 
+                      />
+                    </div>
+                    
+                    <div className="pt-4">
+                      <Button 
+                        variant="destructive" 
+                        onClick={deleteSelected}
+                        className="w-full"
+                      >
+                        Delete Connection
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="executions" className="flex-1 p-4 overflow-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle>Flow Executions</CardTitle>
+                <CardDescription>
+                  View the execution history of this flow
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <div className="flex justify-center">
+                    <Play className="h-12 w-12 text-gray-400 mb-2" />
                   </div>
-                ) : (
-                  <p className="text-sm text-gray-500">No executions yet</p>
-                )}
-              </TabsContent>
-            </Tabs>
-          </div>
-        )}
+                  <h3 className="text-lg font-medium mb-1">No executions yet</h3>
+                  <p className="text-gray-500">
+                    Run this flow to see execution details here
+                  </p>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  onClick={executeFlow} 
+                  disabled={executeFlowMutation.isPending}
+                  className="w-full"
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Execute Flow
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-    </div>
+    </>
   );
 }

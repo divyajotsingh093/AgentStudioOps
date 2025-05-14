@@ -1,184 +1,252 @@
-import React from "react";
+import React, { useState } from "react";
+import { useLocation } from "wouter";
+import { Network, ArrowLeft } from "lucide-react";
+import { Helmet } from "react-helmet";
+import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { toast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
-import { ArrowLeft, Save } from "lucide-react";
-import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
-// Create a schema for flow creation
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 const flowSchema = z.object({
-  name: z.string().min(3, { message: "Name must be at least 3 characters long" }),
-  description: z.string().min(10, { message: "Description must be at least 10 characters long" }),
-  status: z.enum(["Draft", "Active", "Archived"]),
+  name: z.string().min(3, "Name must be at least 3 characters"),
+  description: z.string().optional(),
+  status: z.enum(["Draft", "Testing", "Active", "Inactive", "Archived"]).default("Draft"),
+  version: z.string().default("1.0.0"),
+  tags: z.string().optional(),
 });
 
-type FlowFormValues = z.infer<typeof flowSchema>;
+type FormValues = z.infer<typeof flowSchema>;
 
-export default function NewAgentOrchestrationFlow() {
-  const [_, navigate] = useLocation();
-  const queryClient = useQueryClient();
-  
-  const form = useForm<FlowFormValues>({
+export default function NewFlow() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+
+  const form = useForm<FormValues>({
     resolver: zodResolver(flowSchema),
     defaultValues: {
       name: "",
       description: "",
       status: "Draft",
+      version: "1.0.0",
+      tags: "",
     },
   });
 
-  const createFlowMutation = useMutation({
-    mutationFn: (data: FlowFormValues) => {
-      return apiRequest("/api/flows", {
-        method: "POST",
-        body: JSON.stringify(data),
+  const onSubmit = async (data: FormValues) => {
+    setIsSubmitting(true);
+    try {
+      const tagsArray = data.tags ? data.tags.split(',').map(tag => tag.trim()) : [];
+
+      const response = await fetch('/api/flows', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...data,
+          tags: tagsArray,
+        }),
       });
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/flows"] });
+
+      if (!response.ok) {
+        throw new Error('Failed to create flow');
+      }
+
+      const result = await response.json();
+      
       toast({
-        title: "Flow created",
-        description: "The flow has been created successfully.",
+        title: "Flow Created",
+        description: "Your new agent orchestration flow has been created successfully.",
       });
-      navigate(`/agent-orchestration/${data.id}`);
-    },
-    onError: (error) => {
+      
+      navigate(`/agent-orchestration/${result.id}`);
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Could not create flow. Please try again.",
+        description: "Failed to create the flow. Please try again.",
         variant: "destructive",
       });
-    },
-  });
-
-  function onSubmit(data: FlowFormValues) {
-    createFlowMutation.mutate(data);
-  }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex items-center mb-6">
-        <Link href="/agent-orchestration">
-          <Button variant="ghost" className="mr-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <h1 className="text-3xl font-bold">Create New Flow</h1>
-      </div>
+    <>
+      <Helmet>
+        <title>Create New Flow | Agent Orchestration | Neutrinos AI Agent Studio</title>
+        <meta name="description" content="Create a new agent orchestration flow for your AI agents" />
+      </Helmet>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Flow Details</CardTitle>
-          <CardDescription>
-            Create a new agent orchestration flow by providing the basic information below.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter flow name" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      A descriptive name for your agent orchestration flow.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Describe the purpose of this flow" 
-                        className="resize-none h-32"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Explain what this flow does and its business purpose.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
+      <div className="container mx-auto p-4 space-y-6">
+        <div className="flex items-center space-x-2 mb-6">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/agent-orchestration')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Flows
+          </Button>
+        </div>
+        
+        <div className="flex items-center space-x-2 mb-6">
+          <Network className="h-6 w-6" />
+          <h1 className="text-2xl font-bold">Create New Flow</h1>
+        </div>
+        
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle>Flow Details</CardTitle>
+            <CardDescription>
+              Define the basic information for your new agent orchestration flow
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Flow Name</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a status" />
-                        </SelectTrigger>
+                        <Input placeholder="Enter a name for your flow" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Draft">Draft</SelectItem>
-                        <SelectItem value="Active">Active</SelectItem>
-                        <SelectItem value="Archived">Archived</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Set the initial status of your flow.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="flex justify-end">
-                <Button 
-                  type="submit" 
-                  disabled={createFlowMutation.isPending}
-                >
-                  {createFlowMutation.isPending ? (
-                    <span className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Creating...
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      <Save className="mr-2 h-4 w-4" />
-                      Create Flow
-                    </span>
+                      <FormDescription>
+                        A descriptive name that identifies the purpose of this flow
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe what this flow does"
+                          className="min-h-24"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        A detailed description explaining the purpose and function of this flow
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Draft">Draft</SelectItem>
+                            <SelectItem value="Testing">Testing</SelectItem>
+                            <SelectItem value="Active">Active</SelectItem>
+                            <SelectItem value="Inactive">Inactive</SelectItem>
+                            <SelectItem value="Archived">Archived</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Current status of the flow
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="version"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Version</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Version number for this flow (e.g., 1.0.0)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="tags"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tags</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Claims, Underwriting, Fraud, etc."
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Comma-separated tags to categorize this flow
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end space-x-4 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate('/agent-orchestration')}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Creating..." : "Create Flow"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }
