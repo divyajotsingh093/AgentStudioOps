@@ -95,19 +95,35 @@ router.post('/send', async (req: CustomRequest, res: Response) => {
     // Process the message with the appropriate agent type
     let response: { text: string; metadata?: Record<string, any> };
     
-    switch (agent.type) {
+    switch (agent.type[0]) {
       case 'CustomerService':
-        response = await customerServiceChat({
-          conversation: session.messages.map(msg => ({
+        // Use customerServiceChat for customer service type agents
+        const lastMessage = session.messages.length > 0 ? 
+          session.messages[session.messages.length - 1].content : 
+          '';
+            
+        // Format previous messages for context
+        const history = session.messages
+          .slice(0, -1)
+          .map(msg => ({
             role: msg.role === 'agent' ? 'assistant' : msg.role,
             content: msg.content,
-          })),
-          options: {
-            companyName: 'Neutrinos Insurance',
-            agentName: agent.name,
-            knowledgeBase: agent.knowledge || [],
+          }));
+            
+        const chatResult = await customerServiceChat(
+          lastMessage,
+          history,
+          { customerSession: session.id }
+        );
+            
+        response = { 
+          text: chatResult.response || 'I apologize, but I couldn\'t process your request.',
+          metadata: {
+            needsHumanEscalation: chatResult.needsHumanEscalation || false,
+            suggestedActions: chatResult.suggestedActions || [],
+            sentimentAnalysis: chatResult.sentimentAnalysis
           }
-        });
+        };
         break;
       
       default:

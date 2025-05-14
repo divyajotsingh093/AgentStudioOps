@@ -639,6 +639,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up WebSocket server for real-time collaboration
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   
+  // Register chat WebSocket handler
+  registerChatWebSocketHandler(wss);
+  
   wss.on('connection', (ws) => {
     console.log('New WebSocket connection established');
     
