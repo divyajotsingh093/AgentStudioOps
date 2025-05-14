@@ -1,6 +1,14 @@
 import express, { Response, Router } from 'express';
 import multer from 'multer';
 import { Request } from 'express-serve-static-core';
+import session from 'express-session';
+
+// Extend Request type to include session
+interface CustomRequest extends Request {
+  session: session.Session & {
+    userId?: number | null;
+  };
+}
 import { FileTypeResult, fileTypeFromBuffer } from 'file-type';
 import fs from 'fs';
 import util from 'util';
@@ -45,7 +53,7 @@ const analyzeDocumentSchema = z.object({
 });
 
 // Upload document endpoint
-router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
+router.post('/upload', upload.single('file'), async (req: CustomRequest, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -98,7 +106,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
 });
 
 // Get all documents
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req: CustomRequest, res: Response) => {
   try {
     const agentId = req.query.agentId as string | undefined;
     const documents = await storage.getDocuments(agentId);
@@ -110,7 +118,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Get document by ID
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', async (req: CustomRequest, res: Response) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -130,7 +138,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // Delete document
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', async (req: CustomRequest, res: Response) => {
   try {
     const id = parseInt(req.params.id);
     if (isNaN(id)) {
@@ -150,7 +158,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 });
 
 // Analyze document
-router.post('/analyze', async (req: Request, res: Response) => {
+router.post('/analyze', async (req: CustomRequest, res: Response) => {
   try {
     const { documentId, analysisType } = analyzeDocumentSchema.parse(req.body);
     
@@ -225,7 +233,7 @@ router.post('/analyze', async (req: Request, res: Response) => {
 });
 
 // Get document analyses
-router.get('/:id/analyses', async (req: Request, res: Response) => {
+router.get('/:id/analyses', async (req: CustomRequest, res: Response) => {
   try {
     const documentId = parseInt(req.params.id);
     if (isNaN(documentId)) {
