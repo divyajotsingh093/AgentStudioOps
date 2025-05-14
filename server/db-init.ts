@@ -2,7 +2,7 @@ import { db } from './db';
 import { 
   users, agents, agentComponents, runs, governanceIssues, 
   dataSources, dataConnectors, dataPermissions, agentTools, toolExecutions,
-  documents, documentAnalysis
+  documents, documentAnalysis, idpProviders, idpMappings, idpRules, idpSessions
 } from '@shared/schema';
 
 // Initialize the database by pushing the schema
@@ -171,6 +171,56 @@ export async function initializeDatabase() {
         status TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      -- IDP Provider tables
+      CREATE TABLE IF NOT EXISTS idp_providers (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        config JSONB NOT NULL,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_by INTEGER REFERENCES users(id),
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_verified_at TIMESTAMP DEFAULT NULL
+      );
+      
+      CREATE TABLE IF NOT EXISTS idp_mappings (
+        id SERIAL PRIMARY KEY,
+        provider_id INTEGER NOT NULL REFERENCES idp_providers(id),
+        source_attribute TEXT NOT NULL,
+        target_attribute TEXT NOT NULL,
+        mapping_type TEXT NOT NULL,
+        transformation TEXT,
+        is_required BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      CREATE TABLE IF NOT EXISTS idp_rules (
+        id SERIAL PRIMARY KEY,
+        provider_id INTEGER NOT NULL REFERENCES idp_providers(id),
+        name TEXT NOT NULL,
+        description TEXT,
+        condition TEXT NOT NULL,
+        action TEXT NOT NULL,
+        priority INTEGER DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      CREATE TABLE IF NOT EXISTS idp_sessions (
+        id TEXT PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        provider_id INTEGER NOT NULL REFERENCES idp_providers(id),
+        session_data JSONB NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     

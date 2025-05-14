@@ -84,6 +84,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Agent Orchestration routes
   app.use('/api', flowRoutes);
   
+  // Register Identity Provider (IDP) routes
+  app.use('/api/idp', idpRoutes);
+  
   // Agents API
   app.get("/api/agents", async (req, res) => {
     try {
