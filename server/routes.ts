@@ -635,6 +635,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch tool metadata" });
     }
   });
+  
+  // Trigger metadata
+  app.get("/api/trigger-metadata", (req, res) => {
+    try {
+      res.json({
+        types: triggerTypeEnum.options,
+        statuses: triggerStatusEnum.options
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch trigger metadata" });
+    }
+  });
+
+  // Trigger API Routes
+  app.get("/api/triggers", async (req, res) => {
+    try {
+      const agentId = req.query.agentId as string | undefined;
+      const triggers = await storage.getTriggers(agentId);
+      res.json(triggers);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch triggers" });
+    }
+  });
+  
+  app.get("/api/triggers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid trigger ID" });
+      }
+      
+      const trigger = await storage.getTriggerById(id);
+      if (!trigger) {
+        return res.status(404).json({ message: "Trigger not found" });
+      }
+      
+      res.json(trigger);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch trigger" });
+    }
+  });
+  
+  app.post("/api/triggers", async (req, res) => {
+    try {
+      const triggerData = insertTriggerSchema.parse(req.body);
+      const newTrigger = await storage.createTrigger(triggerData);
+      res.status(201).json(newTrigger);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid trigger data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create trigger" });
+    }
+  });
+  
+  app.put("/api/triggers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid trigger ID" });
+      }
+      
+      const triggerData = updateTriggerSchema.partial().parse(req.body);
+      const updatedTrigger = await storage.updateTrigger(id, triggerData);
+      
+      if (!updatedTrigger) {
+        return res.status(404).json({ message: "Trigger not found" });
+      }
+      
+      res.json(updatedTrigger);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid trigger data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update trigger" });
+    }
+  });
+  
+  app.delete("/api/triggers/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid trigger ID" });
+      }
+      
+      const success = await storage.deleteTrigger(id);
+      if (!success) {
+        return res.status(404).json({ message: "Trigger not found" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete trigger" });
+    }
+  });
+  
+  // Trigger Event API Routes
+  app.get("/api/trigger-events", async (req, res) => {
+    try {
+      const triggerId = req.query.triggerId ? parseInt(req.query.triggerId as string) : undefined;
+      const events = await storage.getTriggerEvents(triggerId);
+      res.json(events);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch trigger events" });
+    }
+  });
+  
+  app.get("/api/trigger-events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid event ID" });
+      }
+      
+      const event = await storage.getTriggerEventById(id);
+      if (!event) {
+        return res.status(404).json({ message: "Trigger event not found" });
+      }
+      
+      res.json(event);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch trigger event" });
+    }
+  });
+  
+  app.post("/api/trigger-events", async (req, res) => {
+    try {
+      const eventData = insertTriggerEventSchema.parse(req.body);
+      const newEvent = await storage.createTriggerEvent(eventData);
+      res.status(201).json(newEvent);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid event data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create trigger event" });
+    }
+  });
+  
+  app.put("/api/trigger-events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid event ID" });
+      }
+      
+      const eventData = req.body;
+      const updatedEvent = await storage.updateTriggerEvent(id, eventData);
+      
+      if (!updatedEvent) {
+        return res.status(404).json({ message: "Trigger event not found" });
+      }
+      
+      res.json(updatedEvent);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update trigger event" });
+    }
+  });
 
   const httpServer = createServer(app);
   
