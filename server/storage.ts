@@ -586,6 +586,112 @@ export class MemStorage implements IStorage {
     return updated;
   }
   
+  // Trigger methods
+  async getTriggers(agentId?: string): Promise<Trigger[]> {
+    let triggers = Array.from(this.triggers.values());
+    
+    if (agentId) {
+      triggers = triggers.filter(trigger => trigger.agentId === agentId);
+    }
+    
+    return triggers;
+  }
+  
+  async getTriggerById(id: number): Promise<Trigger | undefined> {
+    return this.triggers.get(id);
+  }
+  
+  async createTrigger(trigger: InsertTrigger): Promise<Trigger> {
+    const id = this.currentTriggerId++;
+    const newTrigger: Trigger = {
+      ...trigger,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: trigger.status || 'Draft',
+      configuration: trigger.configuration || {},
+      conditions: trigger.conditions || [],
+      description: trigger.description || null,
+      createdBy: trigger.createdBy || null,
+      agentId: trigger.agentId || null,
+      lastTriggeredAt: trigger.lastTriggeredAt || null
+    };
+    this.triggers.set(id, newTrigger);
+    return newTrigger;
+  }
+  
+  async updateTrigger(id: number, trigger: Partial<Omit<Trigger, "id">>): Promise<Trigger | undefined> {
+    const existingTrigger = this.triggers.get(id);
+    if (!existingTrigger) return undefined;
+    
+    const updatedTrigger = {
+      ...existingTrigger,
+      ...trigger,
+      updatedAt: new Date()
+    };
+    
+    this.triggers.set(id, updatedTrigger);
+    return updatedTrigger;
+  }
+  
+  async deleteTrigger(id: number): Promise<boolean> {
+    return this.triggers.delete(id);
+  }
+  
+  async getTriggerEvents(triggerId?: number): Promise<TriggerEvent[]> {
+    let events = Array.from(this.triggerEvents.values());
+    
+    if (triggerId) {
+      events = events.filter(event => event.triggerId === triggerId);
+    }
+    
+    return events;
+  }
+  
+  async getTriggerEventById(id: number): Promise<TriggerEvent | undefined> {
+    return this.triggerEvents.get(id);
+  }
+  
+  async createTriggerEvent(event: InsertTriggerEvent): Promise<TriggerEvent> {
+    const id = this.currentTriggerEventId++;
+    const newEvent: TriggerEvent = {
+      ...event,
+      id,
+      timestamp: event.timestamp || new Date(),
+      payload: event.payload || null,
+      result: event.result || null,
+      errorMessage: event.errorMessage || null,
+      runId: event.runId || null
+    };
+    this.triggerEvents.set(id, newEvent);
+    
+    // Update the lastTriggeredAt timestamp in the associated trigger
+    if (event.triggerId) {
+      const trigger = this.triggers.get(event.triggerId);
+      if (trigger) {
+        this.triggers.set(event.triggerId, {
+          ...trigger,
+          lastTriggeredAt: new Date()
+        });
+      }
+    }
+    
+    return newEvent;
+  }
+  
+  async updateTriggerEvent(id: number, event: Partial<Omit<TriggerEvent, "id">>): Promise<TriggerEvent | undefined> {
+    const existingEvent = this.triggerEvents.get(id);
+    if (!existingEvent) return undefined;
+    
+    const updatedEvent = {
+      ...existingEvent,
+      ...event
+    };
+    
+    this.triggerEvents.set(id, updatedEvent);
+    return updatedEvent;
+  }
+  
   // Initialize with mock data
   private initializeMockData(): void {
     // Mock agents
