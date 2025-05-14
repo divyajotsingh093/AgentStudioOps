@@ -55,6 +55,11 @@ function Router() {
         <Route path="/triggers/new" component={lazy(() => import('@/pages/triggers/new'))} />
         <Route path="/triggers/:id" component={lazy(() => import('@/pages/triggers/[id]'))} />
         
+        {/* Agent Orchestration */}
+        <Route path="/agent-orchestration" component={lazy(() => import('@/pages/agent-orchestration'))} />
+        <Route path="/agent-orchestration/new" component={lazy(() => import('@/pages/agent-orchestration/new'))} />
+        <Route path="/agent-orchestration/:id" component={lazy(() => import('@/pages/agent-orchestration/[id]'))} />
+        
         {/* Chat */}
         <Route path="/chat" component={lazy(() => import('@/pages/chat'))} />
         
