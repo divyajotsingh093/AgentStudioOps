@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useRoute, Link, useLocation } from 'wouter';
+import { useRoute, useLocation } from 'wouter';
 import { Helmet } from 'react-helmet';
-import { 
-  ArrowLeft, 
-  Edit, 
-  Trash, 
-  AlertCircle, 
-  CheckCircle2, 
-  RefreshCw, 
-  LayoutList,
-  Shield
+import { format } from 'date-fns';
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  RefreshCcw,
+  PlusCircle,
+  AlertCircle,
+  CheckCircle,
+  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Card,
   CardContent,
@@ -21,24 +24,34 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PageHeader } from '@/components/common/PageHeader';
 import { useToast } from '@/hooks/use-toast';
 
-// Define the IDP Provider type based on schema
+// Define the IDP interface types
 interface IdpProvider {
   id: number;
   name: string;
@@ -76,103 +89,94 @@ interface IdpRule {
   updatedAt: string;
 }
 
-// Status badge component
-const StatusBadge = ({ status }: { status: string }) => {
-  const getVariant = () => {
-    switch (status) {
-      case 'Active':
-        return 'success';
-      case 'Testing':
-        return 'warning';
-      case 'Inactive':
-        return 'outline';
-      case 'Deprecated':
-        return 'destructive';
-      default:
-        return 'secondary';
-    }
-  };
-
-  return (
-    <Badge variant={getVariant() as any}>{status}</Badge>
-  );
-};
-
-// Provider details page component
-const ProviderDetailsPage = () => {
+const ProviderDetailPage: React.FC = () => {
   const [match, params] = useRoute('/idp/providers/:id');
   const [_, navigate] = useLocation();
   const { toast } = useToast();
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  
-  const { data: provider, isLoading, isError, refetch } = useQuery({
+  const [verifying, setVerifying] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Fetch provider details
+  const { 
+    data: provider, 
+    isLoading: isLoadingProvider, 
+    isError: isErrorProvider,
+    refetch: refetchProvider
+  } = useQuery({
     queryKey: [`/api/idp/providers/${params?.id}`],
     enabled: !!params?.id,
   });
-  
-  const { data: mappings, isLoading: isMappingsLoading } = useQuery({
+
+  // Fetch provider mappings
+  const { 
+    data: mappings, 
+    isLoading: isLoadingMappings,
+    refetch: refetchMappings
+  } = useQuery({
     queryKey: [`/api/idp/providers/${params?.id}/mappings`],
     enabled: !!params?.id,
   });
-  
-  const { data: rules, isLoading: isRulesLoading } = useQuery({
+
+  // Fetch provider rules
+  const { 
+    data: rules, 
+    isLoading: isLoadingRules,
+    refetch: refetchRules
+  } = useQuery({
     queryKey: [`/api/idp/providers/${params?.id}/rules`],
     enabled: !!params?.id,
   });
-  
-  if (!match) {
-    return null;
-  }
-  
+
+  // Handle provider verification
   const handleVerify = async () => {
     if (!params?.id) return;
     
+    setVerifying(true);
     try {
-      setIsVerifying(true);
       const response = await fetch(`/api/idp/providers/${params.id}/verify`, {
         method: 'POST',
       });
-      
+
       if (response.ok) {
+        const result = await response.json();
         toast({
-          title: 'Provider verified',
-          description: 'The provider connection was successfully verified.',
+          title: 'Verification successful',
+          description: 'The provider configuration has been successfully verified.',
           variant: 'success',
         });
-        refetch();
+        refetchProvider();
       } else {
         const error = await response.json();
         toast({
           title: 'Verification failed',
-          description: error.error || 'Could not verify provider connection.',
+          description: error.error || 'Unable to verify the provider configuration.',
           variant: 'destructive',
         });
       }
     } catch (error) {
       toast({
-        title: 'Verification error',
-        description: 'An error occurred while verifying the provider.',
+        title: 'Error',
+        description: 'An unexpected error occurred during verification.',
         variant: 'destructive',
       });
     } finally {
-      setIsVerifying(false);
+      setVerifying(false);
     }
   };
-  
+
+  // Handle provider deletion
   const handleDelete = async () => {
     if (!params?.id) return;
     
     try {
-      setIsDeleting(true);
       const response = await fetch(`/api/idp/providers/${params.id}`, {
         method: 'DELETE',
       });
-      
+
       if (response.ok) {
         toast({
           title: 'Provider deleted',
-          description: 'The identity provider was successfully deleted.',
+          description: 'The identity provider has been successfully deleted.',
           variant: 'success',
         });
         navigate('/idp');
@@ -180,23 +184,38 @@ const ProviderDetailsPage = () => {
         const error = await response.json();
         toast({
           title: 'Deletion failed',
-          description: error.error || 'Could not delete the provider.',
+          description: error.error || 'Unable to delete the provider.',
           variant: 'destructive',
         });
       }
     } catch (error) {
       toast({
-        title: 'Deletion error',
-        description: 'An error occurred while deleting the provider.',
+        title: 'Error',
+        description: 'An unexpected error occurred during deletion.',
         variant: 'destructive',
       });
     } finally {
-      setIsDeleting(false);
+      setDeleteDialogOpen(false);
     }
   };
-  
-  // Skeleton loaders while fetching data
-  if (isLoading) {
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'Active':
+        return 'success';
+      case 'Testing':
+        return 'secondary';
+      case 'Inactive':
+        return 'outline';
+      case 'Deprecated':
+        return 'destructive';
+      default:
+        return 'default';
+    }
+  };
+
+  // Loading state
+  if (isLoadingProvider || (!provider && !isErrorProvider)) {
     return (
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-8">
@@ -204,57 +223,66 @@ const ProviderDetailsPage = () => {
             <Skeleton className="h-8 w-64 mb-2" />
             <Skeleton className="h-4 w-96" />
           </div>
-          <Skeleton className="h-10 w-28" />
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-28" />
+          </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-48 mb-2" />
-                <Skeleton className="h-4 w-32" />
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-          <div>
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-32" />
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-5 w-full" />
-                ))}
-              </CardContent>
-              <CardFooter>
-                <Skeleton className="h-10 w-full" />
-              </CardFooter>
-            </Card>
-          </div>
+        
+        <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="grid grid-cols-2 gap-2">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-full" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-32 w-full" />
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
-  
+
   // Error state
-  if (isError || !provider) {
+  if (isErrorProvider || !provider) {
     return (
       <div className="container mx-auto px-4 py-6">
-        <Card>
+        <PageHeader
+          title="Identity Provider"
+          description="View provider details"
+          actions={
+            <Button variant="outline" onClick={() => navigate('/idp')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Providers
+            </Button>
+          }
+        />
+        
+        <Card className="mt-6">
           <CardHeader className="bg-red-50 border-b border-red-100">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-              <CardTitle className="text-red-800">Provider Not Found</CardTitle>
+            <div className="flex items-center text-red-800">
+              <AlertCircle className="h-5 w-5 mr-2 text-red-600" />
+              <CardTitle>Provider Not Found</CardTitle>
             </div>
-            <CardDescription className="text-red-700">
-              The identity provider you're looking for doesn't exist or there was an error loading it.
-            </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
+            <p className="mb-4">
+              The identity provider you're looking for doesn't exist or there was an error loading it.
+            </p>
             <Button onClick={() => navigate('/idp')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Providers
@@ -264,341 +292,327 @@ const ProviderDetailsPage = () => {
       </div>
     );
   }
-  
+
   return (
     <>
       <Helmet>
         <title>{provider.name} | Identity Provider | Neutrinos AI</title>
         <meta 
           name="description" 
-          content={`View and manage the ${provider.name} identity provider configuration.`}
+          content={`Details and configuration for the ${provider.name} identity provider.`}
         />
       </Helmet>
       
       <div className="container mx-auto px-4 py-6">
         <PageHeader
           title={provider.name}
-          description={provider.description || "Identity Provider"}
+          description={provider.description || `${provider.type} identity provider`}
           actions={
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/idp')}>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => navigate('/idp')}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
               <Button 
                 variant="outline" 
-                size="sm"
-                onClick={handleVerify}
-                disabled={isVerifying}
+                onClick={() => navigate(`/idp/providers/${provider.id}/edit`)}
               >
-                {isVerifying ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Verify
-                  </>
-                )}
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
               </Button>
-              <Button 
-                variant="default" 
-                size="sm"
-                asChild
-              >
-                <Link href={`/idp/providers/${provider.id}/edit`}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Link>
-              </Button>
+              <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="destructive">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Delete Identity Provider</DialogTitle>
+                    <DialogDescription>
+                      Are you sure you want to delete the "{provider.name}" identity provider? 
+                      This action cannot be undone and may affect user authentication.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter className="gap-2 sm:justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => setDeleteDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDelete}
+                    >
+                      Delete Provider
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           }
         />
         
-        <div className="mt-8">
-          <Tabs defaultValue="details">
-            <TabsList className="mb-4">
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="mappings">Attribute Mappings</TabsTrigger>
-              <TabsTrigger value="rules">Rules</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="details">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle>Provider Configuration</CardTitle>
-                    <CardDescription>
-                      Identity provider details and connection settings
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500">Type</h3>
-                        <p className="mt-1">{provider.type}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500">Status</h3>
-                        <div className="mt-1">
-                          <StatusBadge status={provider.status} />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500">Description</h3>
-                      <p className="mt-1">{provider.description || "No description provided."}</p>
-                    </div>
-                    
-                    <div className="border-t pt-4">
-                      <h3 className="text-sm font-medium mb-2">Configuration</h3>
-                      <div className="bg-gray-50 p-4 rounded border overflow-x-auto">
-                        <pre className="text-xs text-gray-700">
-                          {JSON.stringify(provider.config, null, 2)}
-                        </pre>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500">Created</h3>
-                        <p className="mt-1 text-sm">
-                          {new Date(provider.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500">Last Updated</h3>
-                        <p className="mt-1 text-sm">
-                          {new Date(provider.updatedAt).toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500">Last Verified</h3>
-                        <p className="mt-1 text-sm">
-                          {provider.lastVerifiedAt
-                            ? new Date(provider.lastVerifiedAt).toLocaleString()
-                            : "Never verified"}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start" 
-                      asChild
-                    >
-                      <Link href={`/idp/providers/${provider.id}/mappings`}>
-                        <LayoutList className="h-4 w-4 mr-2" />
-                        Manage Attribute Mappings
-                      </Link>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start"
-                      asChild
-                    >
-                      <Link href={`/idp/providers/${provider.id}/rules`}>
-                        <Shield className="h-4 w-4 mr-2" />
-                        Configure Rules
-                      </Link>
-                    </Button>
-                  </CardContent>
-                  <CardFooter>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" className="w-full">
-                          <Trash className="h-4 w-4 mr-2" />
-                          Delete Provider
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the
-                            identity provider and all associated mappings and rules.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={handleDelete}
-                            disabled={isDeleting}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            {isDeleting ? 'Deleting...' : 'Delete'}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </CardFooter>
-                </Card>
+        <div className="grid gap-6 mt-6">
+          {/* Provider Details */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle>Provider Information</CardTitle>
+                <Badge variant={getStatusBadgeVariant(provider.status)}>
+                  {provider.status}
+                </Badge>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="mappings">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Attribute Mappings</CardTitle>
-                    <CardDescription>
-                      Configure how provider attributes map to your application
-                    </CardDescription>
-                  </div>
-                  <Button asChild>
-                    <Link href={`/idp/providers/${provider.id}/mappings/new`}>
-                      Add Mapping
-                    </Link>
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {isMappingsLoading ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-16 w-full" />
-                      ))}
+            </CardHeader>
+            <CardContent className="pt-2">
+              <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Type</dt>
+                  <dd className="text-base">{provider.type}</dd>
+                </div>
+                
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Created</dt>
+                  <dd className="text-base">
+                    {format(new Date(provider.createdAt), 'PPP')}
+                  </dd>
+                </div>
+                
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Last Updated</dt>
+                  <dd className="text-base">
+                    {format(new Date(provider.updatedAt), 'PPP p')}
+                  </dd>
+                </div>
+                
+                <div>
+                  <dt className="text-sm font-medium text-muted-foreground">Last Verified</dt>
+                  <dd className="text-base">
+                    {provider.lastVerifiedAt ? (
+                      format(new Date(provider.lastVerifiedAt), 'PPP p')
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Never</span>
+                    )}
+                  </dd>
+                </div>
+              </dl>
+              
+              <div className="mt-6">
+                <Button
+                  onClick={handleVerify}
+                  disabled={verifying}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  {verifying ? (
+                    <>
+                      <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Verify Connection
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Configuration */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuration</CardTitle>
+              <CardDescription>
+                Authentication configuration for {provider.type}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="config">
+                  <AccordionTrigger>
+                    Provider Configuration
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="bg-muted rounded-md p-4 overflow-auto">
+                      <pre className="text-sm">
+                        {JSON.stringify(provider.config, null, 2)}
+                      </pre>
                     </div>
-                  ) : !mappings || mappings.length === 0 ? (
-                    <div className="text-center py-8 border rounded-md">
-                      <p className="text-gray-500">No attribute mappings defined yet.</p>
-                      <Button className="mt-4" variant="outline" asChild>
-                        <Link href={`/idp/providers/${provider.id}/mappings/new`}>
-                          Add Your First Mapping
-                        </Link>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
+          
+          {/* Attribute Mappings */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Attribute Mappings</CardTitle>
+                  <CardDescription>
+                    Map provider attributes to user attributes
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => navigate(`/idp/providers/${provider.id}/mappings/new`)}>
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Add Mapping
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-2">
+              {isLoadingMappings ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : mappings && mappings.length > 0 ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Source Attribute</TableHead>
+                        <TableHead>Target Attribute</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Required</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {mappings.map((mapping: IdpMapping) => (
+                        <TableRow key={mapping.id}>
+                          <TableCell className="font-medium">
+                            {mapping.sourceAttribute}
+                          </TableCell>
+                          <TableCell>{mapping.targetAttribute}</TableCell>
+                          <TableCell>{mapping.mappingType}</TableCell>
+                          <TableCell>
+                            {mapping.isRequired ? (
+                              <span className="text-green-600 font-medium">Yes</span>
+                            ) : (
+                              <span className="text-muted-foreground">No</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <Alert variant="default" className="bg-muted/50">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>No mappings configured</AlertTitle>
+                  <AlertDescription>
+                    No attribute mappings have been configured for this provider.
+                    <div className="mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/idp/providers/${provider.id}/mappings/new`)}
+                      >
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Add Mapping
                       </Button>
                     </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-3 px-4 font-medium">Source Attribute</th>
-                            <th className="text-left py-3 px-4 font-medium">Target Attribute</th>
-                            <th className="text-left py-3 px-4 font-medium">Type</th>
-                            <th className="text-left py-3 px-4 font-medium">Required</th>
-                            <th className="text-left py-3 px-4 font-medium">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {mappings.map((mapping: IdpMapping) => (
-                            <tr key={mapping.id} className="border-b hover:bg-gray-50">
-                              <td className="py-3 px-4">{mapping.sourceAttribute}</td>
-                              <td className="py-3 px-4">{mapping.targetAttribute}</td>
-                              <td className="py-3 px-4">{mapping.mappingType}</td>
-                              <td className="py-3 px-4">
-                                {mapping.isRequired ? (
-                                  <Badge variant="default">Required</Badge>
-                                ) : (
-                                  <Badge variant="outline">Optional</Badge>
-                                )}
-                              </td>
-                              <td className="py-3 px-4">
-                                <Button variant="ghost" size="sm" asChild>
-                                  <Link href={`/idp/mappings/${mapping.id}/edit`}>
-                                    Edit
-                                  </Link>
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="rules">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Access Rules</CardTitle>
-                    <CardDescription>
-                      Define conditional rules for access control
-                    </CardDescription>
-                  </div>
-                  <Button asChild>
-                    <Link href={`/idp/providers/${provider.id}/rules/new`}>
-                      Add Rule
-                    </Link>
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {isRulesLoading ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-16 w-full" />
-                      ))}
-                    </div>
-                  ) : !rules || rules.length === 0 ? (
-                    <div className="text-center py-8 border rounded-md">
-                      <p className="text-gray-500">No access rules defined yet.</p>
-                      <Button className="mt-4" variant="outline" asChild>
-                        <Link href={`/idp/providers/${provider.id}/rules/new`}>
-                          Add Your First Rule
-                        </Link>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Rules */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Authentication Rules</CardTitle>
+                  <CardDescription>
+                    Customize authentication behavior based on conditions
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => navigate(`/idp/providers/${provider.id}/rules/new`)}>
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Add Rule
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-2">
+              {isLoadingRules ? (
+                <div className="space-y-3">
+                  {[1, 2].map((i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : rules && rules.length > 0 ? (
+                <div className="space-y-4">
+                  {rules.map((rule: IdpRule) => (
+                    <Card key={rule.id} className="overflow-hidden">
+                      <CardHeader className="py-3 bg-muted/50">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium">{rule.name}</div>
+                            {rule.isEnabled ? (
+                              <Badge variant="success">Enabled</Badge>
+                            ) : (
+                              <Badge variant="outline">Disabled</Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Priority: {rule.priority || 'Default'}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="py-3">
+                        {rule.description && (
+                          <p className="text-sm text-muted-foreground mb-3">{rule.description}</p>
+                        )}
+                        <div className="grid gap-4 lg:grid-cols-2">
+                          <div>
+                            <h4 className="text-sm font-medium mb-1">Condition</h4>
+                            <div className="bg-muted rounded-md p-2 text-xs overflow-x-auto">
+                              <pre>{JSON.stringify(rule.condition, null, 2)}</pre>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium mb-1">Action</h4>
+                            <div className="bg-muted rounded-md p-2 text-xs overflow-x-auto">
+                              <pre>{JSON.stringify(rule.action, null, 2)}</pre>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Alert variant="default" className="bg-muted/50">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>No rules configured</AlertTitle>
+                  <AlertDescription>
+                    No authentication rules have been configured for this provider.
+                    <div className="mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/idp/providers/${provider.id}/rules/new`)}
+                      >
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Add Rule
                       </Button>
                     </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-3 px-4 font-medium">Name</th>
-                            <th className="text-left py-3 px-4 font-medium">Priority</th>
-                            <th className="text-left py-3 px-4 font-medium">Status</th>
-                            <th className="text-left py-3 px-4 font-medium">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rules.map((rule: IdpRule) => (
-                            <tr key={rule.id} className="border-b hover:bg-gray-50">
-                              <td className="py-3 px-4">
-                                <div className="font-medium">{rule.name}</div>
-                                <div className="text-xs text-gray-500">
-                                  {rule.description || "No description"}
-                                </div>
-                              </td>
-                              <td className="py-3 px-4">{rule.priority || "Default"}</td>
-                              <td className="py-3 px-4">
-                                {rule.isEnabled ? (
-                                  <Badge variant="success">Enabled</Badge>
-                                ) : (
-                                  <Badge variant="outline">Disabled</Badge>
-                                )}
-                              </td>
-                              <td className="py-3 px-4">
-                                <Button variant="ghost" size="sm" asChild>
-                                  <Link href={`/idp/rules/${rule.id}/edit`}>
-                                    Edit
-                                  </Link>
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </>
   );
 };
 
-export default ProviderDetailsPage;
+export default ProviderDetailPage;

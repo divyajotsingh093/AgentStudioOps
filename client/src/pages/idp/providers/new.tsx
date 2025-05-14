@@ -28,7 +28,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { PageHeader } from '@/components/common/PageHeader';
 import { useToast } from '@/hooks/use-toast';
 
-// Form schema based on IDP provider
+// Form schema for creating a new IDP provider
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   description: z.string().optional(),
@@ -43,18 +43,16 @@ const NewProviderPage = () => {
   const [_, navigate] = useLocation();
   const { toast } = useToast();
 
-  // Default form values
-  const defaultValues: Partial<FormValues> = {
-    name: '',
-    description: '',
-    type: 'OIDC',
-    status: 'Testing',
-    config: {},
-  };
-
+  // Form with default values
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues,
+    defaultValues: {
+      name: '',
+      description: '',
+      type: 'OIDC',
+      status: 'Testing',
+      config: {},
+    },
   });
 
   const onSubmit = async (data: FormValues) => {
@@ -74,7 +72,7 @@ const NewProviderPage = () => {
           description: 'The identity provider was successfully created.',
           variant: 'success',
         });
-        navigate('/idp');
+        navigate(`/idp/providers/${result.id}`);
       } else {
         const error = await response.json();
         toast({
@@ -95,17 +93,17 @@ const NewProviderPage = () => {
   return (
     <>
       <Helmet>
-        <title>New Identity Provider | Neutrinos AI</title>
+        <title>Add Identity Provider | Neutrinos AI</title>
         <meta 
           name="description" 
-          content="Add a new identity provider to integrate with external authentication systems."
+          content="Configure a new identity provider to integrate with external authentication systems."
         />
       </Helmet>
       
       <div className="container mx-auto px-4 py-6">
         <PageHeader
-          title="New Identity Provider"
-          description="Configure a new external identity provider for authentication"
+          title="Add Identity Provider"
+          description="Configure a new identity provider for authentication"
           actions={
             <Button variant="outline" size="sm" onClick={() => navigate('/idp')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -215,7 +213,7 @@ const NewProviderPage = () => {
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          The current status of this provider. New providers default to Testing.
+                          The current status of this provider.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -262,7 +260,7 @@ const NewProviderPage = () => {
                       <FormLabel>Client Secret</FormLabel>
                       <Input 
                         type="password"
-                        placeholder="●●●●●●●●●●●●"
+                        placeholder="Enter client secret"
                         onChange={(e) => {
                           const newConfig = { ...form.getValues('config'), clientSecret: e.target.value };
                           form.setValue('config', newConfig);
@@ -338,12 +336,16 @@ const NewProviderPage = () => {
                 )}
                 
                 <CardFooter className="flex justify-end gap-2 px-0">
-                  <Button variant="outline" type="button" onClick={() => navigate('/idp')}>
+                  <Button 
+                    variant="outline" 
+                    type="button" 
+                    onClick={() => navigate('/idp')}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit">
                     <Save className="h-4 w-4 mr-2" />
-                    Save Provider
+                    Create Provider
                   </Button>
                 </CardFooter>
               </form>
