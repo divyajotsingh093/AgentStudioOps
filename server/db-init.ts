@@ -145,6 +145,33 @@ export async function initializeDatabase() {
         response_payload JSONB,
         error_message TEXT
       );
+      
+      CREATE TABLE IF NOT EXISTS documents (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        mime_type TEXT NOT NULL,
+        size INTEGER NOT NULL,
+        content TEXT,
+        uploaded_by INTEGER REFERENCES users(id),
+        associated_agent_id TEXT REFERENCES agents(id),
+        status TEXT NOT NULL DEFAULT 'Pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      
+      CREATE TABLE IF NOT EXISTS document_analysis (
+        id SERIAL PRIMARY KEY,
+        document_id INTEGER NOT NULL REFERENCES documents(id),
+        entities JSONB DEFAULT '[]',
+        classification JSONB DEFAULT '{}',
+        confidence INTEGER,
+        summary TEXT,
+        analysis_type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
     
     console.log('Database initialization complete!');
@@ -273,6 +300,44 @@ export async function initializeDatabase() {
         responseSchema: {
           type: 'object',
           description: 'Analysis results (varies based on type)'
+        }
+      });
+      
+      // Document Analysis tool
+      await db.insert(agentTools).values({
+        name: 'Document Analyzer',
+        description: 'Analyzes insurance documents to extract entities, classify content, and generate summaries',
+        type: 'API',
+        status: 'Active',
+        version: '1.0.0',
+        endpoint: '/api/documents/analyze',
+        authType: 'None',
+        parameters: [
+          {
+            name: 'documentId',
+            type: 'number',
+            required: true,
+            description: 'ID of the document to analyze'
+          },
+          {
+            name: 'analysisTypes',
+            type: 'array',
+            required: false,
+            description: 'Types of analysis to perform (entities, classification, summary)'
+          }
+        ],
+        responseSchema: {
+          type: 'object',
+          properties: {
+            documentId: {
+              type: 'number',
+              description: 'ID of the analyzed document'
+            },
+            analysisResults: {
+              type: 'array',
+              description: 'Results of the analyses performed'
+            }
+          }
         }
       });
       

@@ -12,6 +12,7 @@ import OpenAI from 'openai';
 import { storage } from './storage';
 import { z } from 'zod';
 import { documentStatusEnum, documentTypeEnum } from '../shared/schema';
+import { extractEntitiesFromDocument, classifyDocument as classifyDocumentAI, summarizeDocument as summarizeDocumentAI } from './openai';
 // Extend Request type to include session
 interface CustomRequest extends Request {
   session: session.Session & {
@@ -318,8 +319,6 @@ async function extractTextFromFile(buffer: Buffer, mimeType: string): Promise<st
   
   return ''; // Return empty string if no extraction method available
 }
-
-import { extractEntitiesFromDocument, classifyDocument as classifyDocumentAI, summarizeDocument as summarizeDocumentAI } from './openai';
 
 async function extractEntities(text: string, documentType: string): Promise<{ entities: any[] }> {
   try {
