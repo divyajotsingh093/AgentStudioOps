@@ -50,6 +50,9 @@ function Router() {
         <Route path="/tools/new" component={lazy(() => import('@/pages/tools/new'))} />
         <Route path="/tools/:id" component={lazy(() => import('@/pages/tools/[id]'))} />
         
+        {/* Chat */}
+        <Route path="/chat" component={lazy(() => import('@/pages/chat'))} />
+        
         <Route component={NotFound} />
       </Switch>
     </MainLayout>
