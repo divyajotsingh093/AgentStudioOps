@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   AlertTriangle,
   Play,
+  PlayCircle,
   Settings,
   Code,
   FileJson,
@@ -375,22 +376,34 @@ export const ActionBuilder: React.FC<ActionBuilderProps> = ({ value, onChange })
   );
 
   const renderRetryPolicy = () => (
-    <div className="space-y-4 pt-2 mt-4 border-t border-gray-200 dark:border-gray-800">
+    <div className="space-y-4 pt-4 mt-6 border-t border-gray-200 dark:border-gray-800">
       <div className="flex items-center justify-between py-2">
-        <div className="space-y-0.5">
-          <Label className="text-base">Retry Policy</Label>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Configure automatic retry behavior</p>
+        <div className="space-y-1">
+          <Label className="text-base font-medium flex items-center">
+            <RotateCcw className="h-4 w-4 mr-2 text-indigo-500" />
+            Retry Policy
+          </Label>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Configure automatic retry behavior if action fails</p>
         </div>
-        <Switch
-          checked={enableRetry}
-          onCheckedChange={setEnableRetry}
-        />
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            {enableRetry ? 'Enabled' : 'Disabled'}
+          </span>
+          <Switch
+            checked={enableRetry}
+            onCheckedChange={setEnableRetry}
+            className={enableRetry ? 'bg-indigo-600' : ''}
+          />
+        </div>
       </div>
       
       {enableRetry && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800">
           <div className="space-y-2">
-            <Label htmlFor="max-retries">Max Retries</Label>
+            <Label htmlFor="max-retries" className="flex items-center text-sm">
+              <AlertTriangle className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
+              Max Retries
+            </Label>
             <Input
               id="max-retries"
               type="number"
@@ -398,16 +411,21 @@ export const ActionBuilder: React.FC<ActionBuilderProps> = ({ value, onChange })
               max={10}
               value={maxRetries}
               onChange={(e) => setMaxRetries(parseInt(e.target.value))}
+              className="border-gray-200 dark:border-gray-700"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="backoff">Backoff Multiplier</Label>
+            <Label htmlFor="backoff" className="flex items-center text-sm">
+              <Play className="h-3.5 w-3.5 mr-1.5 text-green-500" />
+              Backoff Multiplier
+            </Label>
             <Input
               id="backoff"
               type="number"
               min={1}
               max={5}
               step={0.1}
+              className="border-gray-200 dark:border-gray-700"
               value={backoffMultiplier}
               onChange={(e) => setBackoffMultiplier(parseFloat(e.target.value))}
             />
@@ -441,10 +459,11 @@ export const ActionBuilder: React.FC<ActionBuilderProps> = ({ value, onChange })
   );
 
   return (
-    <Card className="border border-indigo-100 dark:border-indigo-900">
-      <CardHeader className="pb-3">
+    <Card className="border border-indigo-100 dark:border-indigo-900 shadow-sm hover:shadow-md transition-shadow duration-200">
+      <CardHeader className="pb-3 bg-gradient-to-r from-indigo-50 to-transparent dark:from-indigo-950/30 dark:to-transparent">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">
+          <CardTitle className="text-lg font-bold flex items-center">
+            <PlayCircle className="h-5 w-5 mr-2 text-indigo-500" />
             Action Configuration
           </CardTitle>
         </div>
@@ -456,65 +475,85 @@ export const ActionBuilder: React.FC<ActionBuilderProps> = ({ value, onChange })
       <CardContent className="space-y-6">
         <div className="space-y-4">
           <Label htmlFor="action-type">Action Type</Label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
             <Button
               type="button"
               variant={actionType === 'invoke_agent' ? 'secondary' : 'outline'}
-              className={`flex flex-col items-center justify-center h-24 px-3 ${
-                actionType === 'invoke_agent' ? 'bg-indigo-50 dark:bg-indigo-900/30' : ''
+              className={`flex flex-col items-center justify-center h-28 px-3 ${
+                actionType === 'invoke_agent' 
+                  ? 'bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/20 border-indigo-200 dark:border-indigo-800 shadow-md' 
+                  : 'hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-200'
               }`}
               onClick={() => setActionType('invoke_agent')}
             >
-              <Bot className="h-8 w-8 mb-2 text-indigo-500" />
-              <span className="text-sm">Invoke Agent</span>
+              <div className={`p-3 rounded-full ${actionType === 'invoke_agent' ? 'bg-indigo-100 dark:bg-indigo-800/30' : ''} mb-2`}>
+                <Bot className="h-8 w-8 text-indigo-500" />
+              </div>
+              <span className="text-sm font-medium">Invoke Agent</span>
             </Button>
             
             <Button
               type="button"
               variant={actionType === 'execute_tool' ? 'secondary' : 'outline'}
-              className={`flex flex-col items-center justify-center h-24 px-3 ${
-                actionType === 'execute_tool' ? 'bg-green-50 dark:bg-green-900/30' : ''
+              className={`flex flex-col items-center justify-center h-28 px-3 ${
+                actionType === 'execute_tool' 
+                  ? 'bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 border-green-200 dark:border-green-800 shadow-md' 
+                  : 'hover:bg-green-50/50 dark:hover:bg-green-900/10 hover:border-green-200 dark:hover:border-green-800 transition-all duration-200'
               }`}
               onClick={() => setActionType('execute_tool')}
             >
-              <PuzzlePiece className="h-8 w-8 mb-2 text-green-500" />
-              <span className="text-sm">Execute Tool</span>
+              <div className={`p-3 rounded-full ${actionType === 'execute_tool' ? 'bg-green-100 dark:bg-green-800/30' : ''} mb-2`}>
+                <PuzzlePiece className="h-8 w-8 text-green-500" />
+              </div>
+              <span className="text-sm font-medium">Execute Tool</span>
             </Button>
             
             <Button
               type="button"
               variant={actionType === 'call_function' ? 'secondary' : 'outline'}
-              className={`flex flex-col items-center justify-center h-24 px-3 ${
-                actionType === 'call_function' ? 'bg-blue-50 dark:bg-blue-900/30' : ''
+              className={`flex flex-col items-center justify-center h-28 px-3 ${
+                actionType === 'call_function' 
+                  ? 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border-blue-200 dark:border-blue-800 shadow-md' 
+                  : 'hover:bg-blue-50/50 dark:hover:bg-blue-900/10 hover:border-blue-200 dark:hover:border-blue-800 transition-all duration-200'
               }`}
               onClick={() => setActionType('call_function')}
             >
-              <Code className="h-8 w-8 mb-2 text-blue-500" />
-              <span className="text-sm">Call Function</span>
+              <div className={`p-3 rounded-full ${actionType === 'call_function' ? 'bg-blue-100 dark:bg-blue-800/30' : ''} mb-2`}>
+                <Code className="h-8 w-8 text-blue-500" />
+              </div>
+              <span className="text-sm font-medium">Call Function</span>
             </Button>
             
             <Button
               type="button"
               variant={actionType === 'webhook' ? 'secondary' : 'outline'}
-              className={`flex flex-col items-center justify-center h-24 px-3 ${
-                actionType === 'webhook' ? 'bg-purple-50 dark:bg-purple-900/30' : ''
+              className={`flex flex-col items-center justify-center h-28 px-3 ${
+                actionType === 'webhook' 
+                  ? 'bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 border-purple-200 dark:border-purple-800 shadow-md' 
+                  : 'hover:bg-purple-50/50 dark:hover:bg-purple-900/10 hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-200'
               }`}
               onClick={() => setActionType('webhook')}
             >
-              <Webhook className="h-8 w-8 mb-2 text-purple-500" />
-              <span className="text-sm">Send Webhook</span>
+              <div className={`p-3 rounded-full ${actionType === 'webhook' ? 'bg-purple-100 dark:bg-purple-800/30' : ''} mb-2`}>
+                <Webhook className="h-8 w-8 text-purple-500" />
+              </div>
+              <span className="text-sm font-medium">Send Webhook</span>
             </Button>
             
             <Button
               type="button"
               variant={actionType === 'database_operation' ? 'secondary' : 'outline'}
-              className={`flex flex-col items-center justify-center h-24 px-3 ${
-                actionType === 'database_operation' ? 'bg-amber-50 dark:bg-amber-900/30' : ''
+              className={`flex flex-col items-center justify-center h-28 px-3 ${
+                actionType === 'database_operation' 
+                  ? 'bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/20 border-amber-200 dark:border-amber-800 shadow-md' 
+                  : 'hover:bg-amber-50/50 dark:hover:bg-amber-900/10 hover:border-amber-200 dark:hover:border-amber-800 transition-all duration-200'
               }`}
               onClick={() => setActionType('database_operation')}
             >
-              <Database className="h-8 w-8 mb-2 text-amber-500" />
-              <span className="text-sm">Database Op</span>
+              <div className={`p-3 rounded-full ${actionType === 'database_operation' ? 'bg-amber-100 dark:bg-amber-800/30' : ''} mb-2`}>
+                <Database className="h-8 w-8 text-amber-500" />
+              </div>
+              <span className="text-sm font-medium">Database Op</span>
             </Button>
           </div>
         </div>
