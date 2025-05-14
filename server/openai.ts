@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import type { ChatCompletionMessageParam } from "openai/resources";
 
 // The newest OpenAI model is "gpt-4o" which was released May 13, 2024. 
 // Do not change this unless explicitly requested by the user.
@@ -251,7 +252,7 @@ export async function analyzeText(request: AnalysisRequest): Promise<any> {
  */
 export async function customerServiceChat(
   message: string,
-  conversationHistory: Array<{ role: string; content: string }> = [],
+  conversationHistory: ChatCompletionMessageParam[] = [],
   customerInfo: Record<string, any> = {}
 ): Promise<{
   response: string;
@@ -271,7 +272,7 @@ export async function customerServiceChat(
     `;
     
     // Prepare conversation history in the format OpenAI expects
-    const messages = [
+    const messages: ChatCompletionMessageParam[] = [
       { role: "system", content: systemPrompt },
       ...conversationHistory,
       { role: "user", content: message }

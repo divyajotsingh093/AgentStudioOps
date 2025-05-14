@@ -1097,6 +1097,15 @@ export class DatabaseStorage implements IStorage {
     const [execution] = await db.select().from(toolExecutions).where(eq(toolExecutions.id, id));
     return execution || undefined;
   }
+  
+  async updateToolExecution(id: number, execution: Partial<Omit<ToolExecution, "id">>): Promise<ToolExecution | undefined> {
+    const [updatedExecution] = await db
+      .update(toolExecutions)
+      .set(execution)
+      .where(eq(toolExecutions.id, id))
+      .returning();
+    return updatedExecution || undefined;
+  }
 }
 
 // Use DatabaseStorage for both development and production
