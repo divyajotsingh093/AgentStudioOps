@@ -12,7 +12,21 @@ import {
   documents, type Document, type InsertDocument,
   documentAnalysis, type DocumentAnalysis, type InsertDocumentAnalysis,
   triggers, type Trigger, type InsertTrigger, type UpdateTrigger,
-  triggerEvents, type TriggerEvent, type InsertTriggerEvent
+  triggerEvents, type TriggerEvent, type InsertTriggerEvent,
+  
+  // Agent Orchestration Canvas schemas
+  flows, type Flow, type InsertFlow, type UpdateFlow,
+  flowNodes, type FlowNode, type InsertFlowNode, type UpdateFlowNode,
+  flowEdges, type FlowEdge, type InsertFlowEdge, type UpdateFlowEdge,
+  flowExecutions, type FlowExecution, type InsertFlowExecution,
+  nodeExecutions, type NodeExecution, type InsertNodeExecution,
+  
+  // Data Fabric Explorer schemas
+  dataDomains, type DataDomain, type InsertDataDomain, type UpdateDataDomain,
+  dataEntities, type DataEntity, type InsertDataEntity, type UpdateDataEntity,
+  dataRelationships, type DataRelationship, type InsertDataRelationship, type UpdateDataRelationship,
+  dataLineage, type DataLineage, type InsertDataLineage,
+  dataQueries, type DataQuery, type InsertDataQuery, type UpdateDataQuery
 } from "@shared/schema";
 import { db } from './db';
 import { eq } from 'drizzle-orm';
