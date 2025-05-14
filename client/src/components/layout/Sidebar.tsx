@@ -149,6 +149,7 @@ const DesktopSidebar = ({ isActive, collapsed = false, onToggleCollapse }: Deskt
         <SidebarItem href="/data-sources" icon={Database} label="Data Sources" active={isActive("/data-sources")} collapsed={collapsed} />
         <SidebarItem href="/data-fabric" icon={CircuitBoard} label="Data Fabric" active={isActive("/data-fabric")} collapsed={collapsed} />
         <SidebarItem href="/tools" icon={Wrench} label="Tools" active={isActive("/tools")} collapsed={collapsed} />
+        <SidebarItem href="/triggers" icon={BellRing} label="Triggers" active={isActive("/triggers")} collapsed={collapsed} />
         <SidebarItem href="/chat" icon={MessageSquare} label="Chat" active={isActive("/chat")} collapsed={collapsed} />
         <SidebarItem href="/settings" icon={Settings} label="Settings" active={isActive("/settings")} collapsed={collapsed} />
       </ul>
@@ -202,6 +203,7 @@ const MobileSidebar = ({ isActive, isOpen, onClose }: MobileSidebarProps) => (
             <SidebarItem href="/data-sources" icon={Database} label="Data Sources" active={isActive("/data-sources")} onClick={onClose} />
             <SidebarItem href="/data-fabric" icon={CircuitBoard} label="Data Fabric" active={isActive("/data-fabric")} onClick={onClose} />
             <SidebarItem href="/tools" icon={Wrench} label="Tools" active={isActive("/tools")} onClick={onClose} />
+            <SidebarItem href="/triggers" icon={BellRing} label="Triggers" active={isActive("/triggers")} onClick={onClose} />
             <SidebarItem href="/chat" icon={MessageSquare} label="Chat" active={isActive("/chat")} onClick={onClose} />
             
             <Separator className="my-3" />

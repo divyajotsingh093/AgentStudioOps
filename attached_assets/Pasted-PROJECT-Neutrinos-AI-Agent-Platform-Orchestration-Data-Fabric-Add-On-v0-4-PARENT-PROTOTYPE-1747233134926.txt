@@ -1,0 +1,146 @@
+PROJECT ▸  “Neutrinos AI-Agent Platform – Orchestration + Data Fabric Add-On v0.4”
+
+PARENT PROTOTYPE
+• Builds on v0.3 (Tools Integration). Keep nav (left rail), branding (Indigo/Lime), font (Inter).
+
+——————————————
+PART A  •  AGENT ORCHESTRATION CANVAS
+——————————————
+
+PRIMARY GOAL  
+“Define a multi-agent flow that triggers on ‘New Claim’, runs Doc-AI → Fraud-Check → FNOL-Bot in parallel, waits for both, then calls Slack-Notify.”
+
+NEW JOURNEY
+1. Click **Orchestration** in left rail.  
+2. New canvas opens; user drags **Trigger → Doc-AI Agent → Fraud Agent → Join → Slack-Notify Tool**.  
+3. Double-click Join node; sets “wait for all”.  
+4. Click **Simulate** → run trace animates through nodes.  
+5. Save as **flow_claim_fast_track**; schedule “on S3 upload /claims/*.pdf”.
+
+SCREENS & WIREFRAMES
+
+• **O-1  Canvas**  
+    – Toolbar: Select ⌶ · Pan ✋ · Zoom +/- · Simulate ▶ · Schedule ⏰ · Save 💾  
+    – Node palette left: *Trigger, Condition, Agent, Tool, Human-Approval, Join, Timer*  
+    – DAG area center (React-Flow) with grid & snap lines  
+    – Right inspector drawer (props differ by node type)
+
+• **O-2  Schedule Modal**  
+    – Trigger type dropdown (Event Bus, CRON, Webhook, File Upload)  
+    – Example auto-filled path `/s3/bucket/claims`  
+    – CTA **Activate**; shows green badge “Enabled”
+
+• **O-3  Run Trace** *(opens after Simulate)*  
+    – Vertical timeline: nodes highlight in order; latency badges  
+    – Table of outputs; failed step turns red  
+    – “Open Run Detail ↗” link
+
+NEW HOTSPOTS
+✓ Drag node; edge auto-connect on drop.  
+✓ Hover node; mini toolbar (edit ✏, delete 🗑, clone 📑).  
+✓ Simulate: nodes pulse Indigo → Lime on success.  
+✓ Condition node drawer: if/else JSON logic editor.  
+✓ Human-Approval node: pick case template.
+
+MOCK DATA
+```json
+{
+  "nodes_palette":[
+    {"type":"trigger","name":"New Claim"},
+    {"type":"agent","name":"Doc-AI Extract"},
+    {"type":"agent","name":"Fraud Detector"},
+    {"type":"tool","name":"Slack Notify"},
+    {"type":"join","name":"Join"},
+    {"type":"human","name":"Manager Approve"}
+  ],
+  "run_trace":[
+    {"node":"New Claim","ts":1},
+    {"node":"Doc-AI Extract","ts":3,"lat":820},
+    {"node":"Fraud Detector","ts":3,"lat":540},
+    {"node":"Join","ts":5,"lat":50},
+    {"node":"Slack Notify","ts":6,"lat":110}
+  ]
+}
+SUCCESS CRITERIA (CANVAS)
+• Reviewer builds DAG & simulates in ≤ 90 s.
+• “Latency 820 ms” hover reveals RAW output JSON.
+• Scheduling modal activated in ≤ 10 s.
+
+——————————————
+PART B • DATA FABRIC EXPLORER
+——————————————
+
+PRIMARY GOAL
+“Browse Policy schema, preview data sample, set row-level ACL, run SQLless query from Agent.”
+
+NEW JOURNEY
+
+Click Data Fabric in left rail.
+
+Explorer shows Domains → Entities → Fields tree.
+
+User selects Policy entity; sees ER diagram + sample rows.
+
+Click ACL tab; adds “Underwriter-Role: read” rule.
+
+Opens Query Builder tab; type policyNumber == 12345; preview returns JSON; click “Generate Embed” → code snippet for agent prompt.
+
+SCREENS & WIREFRAMES
+
+• D-1 Domain Browser
+– Left tree (Life, Health, Claims, Policy, Customer)
+– Right pane tabs: Schema · Sample Data · Lineage · ACL
+– ER mini-map top-right
+
+• D-2 ACL Editor
+– Table rows: Role · Permission (read/write/none) · Column Mask → Regex
+– Toggle PII mask on/off per column (checkbox)
+
+• D-3 Query Builder
+– DSL assist: dropdown for fields, operators, values
+– “Run” → results table; “Save as Snippet” → modal with templated JSON to inject into agent prompt
+
+• D-4 Lineage View
+– Graph nodes: Source DB → ETL job → Policy entity → Agent “Accel UW”
+– Hover reveals last sync timestamp, record counts
+
+NEW HOTSPOTS
+✓ Tree click animates ER graph (nodes spring).
+✓ Column hover shows PII tag chip.
+✓ Mask checkbox toggles blurred/unblurred sample cell.
+✓ Query autocomplete with entity fields.
+
+MOCK DATA
+
+json
+Copy
+Edit
+{
+  "entities":[
+    {"domain":"Policy","name":"Policy","pk":"policyNumber","fields":["policyNumber","productCode","sumAssured","effectiveDate","ownerId"]},
+    {"domain":"Customer","name":"Customer","pk":"customerId","fields":["customerId","firstName","lastName","dob"]}
+  ],
+  "sample_policy":[{"policyNumber":12345,"productCode":"LIFE_TERM","sumAssured":500000,"effectiveDate":"2024-03-01","ownerId":9876}],
+  "acl":[{"role":"Underwriter","permissions":"read","mask":{"sumAssured":false}},{"role":"Agent","permissions":"read","mask":{"ownerId":true}}],
+  "lineage":[{"source":"corelife_db.policies","dest":"Policy","lastSync":"2025-05-18T02:00Z"}]
+}
+SUCCESS CRITERIA (DATA FABRIC)
+• Reviewer masks ownerId column in ≤ 8 s.
+• Runs query policyNumber==12345 and sees sample JSON.
+• Copies embed snippet to clipboard via modal button.
+
+——————————————
+VISUAL & MOTION NOTES
+• Canvas nodes: 160 × 60 px, rounded-xl, Indigo border; on simulate, success pulse Lime, failure pulse Rose.
+• Data Fabric ER nodes use subtle pastel fills; pan/zoom with trackpad.
+• Drawer & modal animations same 250 ms ease-out as previous builds.
+
+OUTPUT SETTINGS
+• Desktop 1440 × 900.
+• Link new Orchestration & Data Fabric nav items; ensure back navigation to Agent View.
+
+END OF PROMPT
+
+markdown
+Copy
+Edit
