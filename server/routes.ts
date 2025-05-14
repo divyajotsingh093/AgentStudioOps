@@ -18,6 +18,7 @@ import aiRoutes from './ai-routes';
 import documentRoutes from './document-routes';
 import chatRoutes, { registerChatWebSocketHandler } from './chat-routes';
 import flowRoutes from './flow-routes';
+import idpRoutes from './idp-routes';
 
 // Collaborative editing types
 interface CollaborationSession {

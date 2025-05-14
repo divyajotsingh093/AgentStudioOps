@@ -2553,6 +2553,162 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedExecution || undefined;
   }
+  
+  // Identity Provider (IDP) methods
+  async getIdpProviders(): Promise<IdpProvider[]> {
+    return await db.select().from(idpProviders).orderBy(idpProviders.name);
+  }
+  
+  async getIdpProviderById(id: number): Promise<IdpProvider | undefined> {
+    const [provider] = await db.select().from(idpProviders).where(eq(idpProviders.id, id));
+    return provider;
+  }
+  
+  async createIdpProvider(provider: InsertIdpProvider): Promise<IdpProvider> {
+    const [newProvider] = await db.insert(idpProviders).values(provider).returning();
+    return newProvider;
+  }
+  
+  async updateIdpProvider(id: number, provider: UpdateIdpProvider): Promise<IdpProvider | undefined> {
+    const [updatedProvider] = await db
+      .update(idpProviders)
+      .set({
+        ...provider,
+        updatedAt: new Date()
+      })
+      .where(eq(idpProviders.id, id))
+      .returning();
+    return updatedProvider;
+  }
+  
+  async deleteIdpProvider(id: number): Promise<boolean> {
+    await db.delete(idpProviders).where(eq(idpProviders.id, id));
+    return true;
+  }
+  
+  async verifyIdpProvider(id: number): Promise<boolean> {
+    const [provider] = await db
+      .update(idpProviders)
+      .set({
+        lastVerifiedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(idpProviders.id, id))
+      .returning();
+    return !!provider;
+  }
+  
+  async getIdpMappings(providerId: number): Promise<IdpMapping[]> {
+    return await db
+      .select()
+      .from(idpMappings)
+      .where(eq(idpMappings.providerId, providerId))
+      .orderBy(idpMappings.sourceAttribute);
+  }
+  
+  async getIdpMappingById(id: number): Promise<IdpMapping | undefined> {
+    const [mapping] = await db.select().from(idpMappings).where(eq(idpMappings.id, id));
+    return mapping;
+  }
+  
+  async createIdpMapping(mapping: InsertIdpMapping): Promise<IdpMapping> {
+    const [newMapping] = await db.insert(idpMappings).values(mapping).returning();
+    return newMapping;
+  }
+  
+  async updateIdpMapping(id: number, mapping: UpdateIdpMapping): Promise<IdpMapping | undefined> {
+    const [updatedMapping] = await db
+      .update(idpMappings)
+      .set({
+        ...mapping,
+        updatedAt: new Date()
+      })
+      .where(eq(idpMappings.id, id))
+      .returning();
+    return updatedMapping;
+  }
+  
+  async deleteIdpMapping(id: number): Promise<boolean> {
+    await db.delete(idpMappings).where(eq(idpMappings.id, id));
+    return true;
+  }
+  
+  async getIdpRules(providerId: number): Promise<IdpRule[]> {
+    return await db
+      .select()
+      .from(idpRules)
+      .where(eq(idpRules.providerId, providerId))
+      .orderBy(idpRules.priority);
+  }
+  
+  async getIdpRuleById(id: number): Promise<IdpRule | undefined> {
+    const [rule] = await db.select().from(idpRules).where(eq(idpRules.id, id));
+    return rule;
+  }
+  
+  async createIdpRule(rule: InsertIdpRule): Promise<IdpRule> {
+    const [newRule] = await db.insert(idpRules).values(rule).returning();
+    return newRule;
+  }
+  
+  async updateIdpRule(id: number, rule: UpdateIdpRule): Promise<IdpRule | undefined> {
+    const [updatedRule] = await db
+      .update(idpRules)
+      .set({
+        ...rule,
+        updatedAt: new Date()
+      })
+      .where(eq(idpRules.id, id))
+      .returning();
+    return updatedRule;
+  }
+  
+  async deleteIdpRule(id: number): Promise<boolean> {
+    await db.delete(idpRules).where(eq(idpRules.id, id));
+    return true;
+  }
+  
+  async getIdpSessions(userId?: number): Promise<IdpSession[]> {
+    if (userId) {
+      return await db
+        .select()
+        .from(idpSessions)
+        .where(eq(idpSessions.userId, userId))
+        .orderBy(idpSessions.startedAt);
+    } else {
+      return await db
+        .select()
+        .from(idpSessions)
+        .orderBy(idpSessions.startedAt);
+    }
+  }
+  
+  async getIdpSessionById(id: string): Promise<IdpSession | undefined> {
+    const [session] = await db.select().from(idpSessions).where(eq(idpSessions.id, id));
+    return session;
+  }
+  
+  async createIdpSession(session: InsertIdpSession): Promise<IdpSession> {
+    const [newSession] = await db.insert(idpSessions).values(session).returning();
+    return newSession;
+  }
+  
+  async updateIdpSession(id: string, sessionData: any): Promise<IdpSession | undefined> {
+    const [updatedSession] = await db
+      .update(idpSessions)
+      .set({
+        sessionData,
+        lastActivityAt: new Date()
+      })
+      .where(eq(idpSessions.id, id))
+      .returning();
+    return updatedSession;
+  }
+  
+  async terminateIdpSession(id: string): Promise<boolean> {
+    await db.delete(idpSessions).where(eq(idpSessions.id, id));
+    return true;
+  }
 }
 
 // Use DatabaseStorage for both development and production
