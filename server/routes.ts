@@ -9,7 +9,9 @@ import {
   insertDataSourceSchema, updateDataSourceSchema,
   insertDataConnectorSchema, updateDataConnectorSchema,
   insertDataPermissionSchema, insertToolSchema, updateToolSchema,
-  insertToolExecutionSchema, toolTypeEnum, toolAuthTypeEnum, toolStatusEnum
+  insertToolExecutionSchema, toolTypeEnum, toolAuthTypeEnum, toolStatusEnum,
+  insertTriggerSchema, updateTriggerSchema, insertTriggerEventSchema,
+  triggerTypeEnum, triggerStatusEnum
 } from "@shared/schema";
 import { z } from "zod";
 import aiRoutes from './ai-routes';

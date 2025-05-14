@@ -1433,6 +1433,98 @@ export class DatabaseStorage implements IStorage {
       
     return updatedAnalysis;
   }
+  
+  // Trigger methods
+  async getTriggers(agentId?: string): Promise<Trigger[]> {
+    let query = db.select().from(triggers);
+    
+    if (agentId) {
+      query = query.where(eq(triggers.agentId, agentId));
+    }
+    
+    const result = await query;
+    return result;
+  }
+
+  async getTriggerById(id: number): Promise<Trigger | undefined> {
+    const [trigger] = await db
+      .select()
+      .from(triggers)
+      .where(eq(triggers.id, id));
+    return trigger || undefined;
+  }
+
+  async createTrigger(trigger: InsertTrigger): Promise<Trigger> {
+    const [newTrigger] = await db
+      .insert(triggers)
+      .values(trigger)
+      .returning();
+    return newTrigger;
+  }
+
+  async updateTrigger(id: number, trigger: Partial<Omit<Trigger, "id">>): Promise<Trigger | undefined> {
+    const [updatedTrigger] = await db
+      .update(triggers)
+      .set({
+        ...trigger,
+        updatedAt: new Date()
+      })
+      .where(eq(triggers.id, id))
+      .returning();
+    return updatedTrigger || undefined;
+  }
+
+  async deleteTrigger(id: number): Promise<boolean> {
+    const result = await db
+      .delete(triggers)
+      .where(eq(triggers.id, id));
+    return result.count > 0;
+  }
+
+  async getTriggerEvents(triggerId?: number): Promise<TriggerEvent[]> {
+    let query = db.select().from(triggerEvents);
+    
+    if (triggerId) {
+      query = query.where(eq(triggerEvents.triggerId, triggerId));
+    }
+    
+    const result = await query;
+    return result;
+  }
+
+  async getTriggerEventById(id: number): Promise<TriggerEvent | undefined> {
+    const [event] = await db
+      .select()
+      .from(triggerEvents)
+      .where(eq(triggerEvents.id, id));
+    return event || undefined;
+  }
+
+  async createTriggerEvent(event: InsertTriggerEvent): Promise<TriggerEvent> {
+    const [newEvent] = await db
+      .insert(triggerEvents)
+      .values(event)
+      .returning();
+    
+    // Update the lastTriggeredAt timestamp in the associated trigger
+    if (event.triggerId) {
+      await db
+        .update(triggers)
+        .set({ lastTriggeredAt: new Date() })
+        .where(eq(triggers.id, event.triggerId));
+    }
+    
+    return newEvent;
+  }
+
+  async updateTriggerEvent(id: number, event: Partial<Omit<TriggerEvent, "id">>): Promise<TriggerEvent | undefined> {
+    const [updatedEvent] = await db
+      .update(triggerEvents)
+      .set(event)
+      .where(eq(triggerEvents.id, id))
+      .returning();
+    return updatedEvent || undefined;
+  }
 }
 
 // Use DatabaseStorage for both development and production
