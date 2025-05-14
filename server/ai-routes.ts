@@ -185,7 +185,7 @@ router.post('/generate-component', async (req: Request, res: Response) => {
       name: component.name,
       description: description,
       configuration: component.configuration,
-      content: component.code
+      content: component.code // map the code field to content as per schema
     });
     
     // Update run status
