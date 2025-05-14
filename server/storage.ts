@@ -74,6 +74,7 @@ export interface IStorage {
   getToolExecutions(toolId?: number, runId?: string): Promise<ToolExecution[]>;
   createToolExecution(execution: InsertToolExecution): Promise<ToolExecution>;
   getToolExecutionById(id: number): Promise<ToolExecution | undefined>;
+  updateToolExecution(id: number, execution: Partial<Omit<ToolExecution, "id">>): Promise<ToolExecution | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -445,6 +446,17 @@ export class MemStorage implements IStorage {
   
   async getToolExecutionById(id: number): Promise<ToolExecution | undefined> {
     return this.toolExecutions.get(id);
+  }
+  
+  async updateToolExecution(id: number, execution: Partial<Omit<ToolExecution, "id">>): Promise<ToolExecution | undefined> {
+    const existingExecution = this.toolExecutions.get(id);
+    if (!existingExecution) {
+      return undefined;
+    }
+    
+    const updatedExecution = { ...existingExecution, ...execution };
+    this.toolExecutions.set(id, updatedExecution);
+    return updatedExecution;
   }
   
   // Initialize with mock data

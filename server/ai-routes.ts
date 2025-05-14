@@ -1,12 +1,18 @@
-import { Router, Request, Response } from 'express';
-import * as ai from './openai';
+import express, { Router, Request, Response } from 'express';
+import { 
+  generateText, 
+  analyzeRisk, 
+  analyzeClaim, 
+  analyzeText, 
+  customerServiceChat, 
+  generateAgentComponent
+} from './openai';
 import { storage } from './storage';
 import { v4 as uuidv4 } from 'uuid';
-import { insertAgentComponentSchema } from '@shared/schema';
 
-const router = Router();
+const router: Router = express.Router();
 
-// Generate text with OpenAI
+// Route for general text generation with OpenAI
 router.post('/generate-text', async (req: Request, res: Response) => {
   try {
     const { systemPrompt, userPrompt, model, temperature, maxTokens } = req.body;
@@ -14,85 +20,95 @@ router.post('/generate-text', async (req: Request, res: Response) => {
     if (!systemPrompt || !userPrompt) {
       return res.status(400).json({ error: 'System prompt and user prompt are required' });
     }
-
-    const result = await ai.generateText({
+    
+    const response = await generateText({
       systemPrompt,
       userPrompt,
-      model,
-      temperature,
-      maxTokens
+      model: model || 'gpt-4o',
+      temperature: temperature || 0.7,
+      maxTokens: maxTokens || 1000
     });
-
-    res.json(result);
+    
+    res.json(response);
   } catch (error) {
     console.error('Error generating text:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to generate text' });
   }
 });
 
-// Analyze risk for underwriting
+// Route for analyzing insurance risk
 router.post('/analyze-risk', async (req: Request, res: Response) => {
   try {
-    const { policyData, runId, agentId } = req.body;
+    const { policyData } = req.body;
     
     if (!policyData) {
       return res.status(400).json({ error: 'Policy data is required' });
     }
-
-    const result = await ai.analyzeRisk(policyData);
     
-    // Record tool execution if runId and agentId are provided
-    if (runId && agentId) {
-      await storage.createToolExecution({
-        runId,
-        agentId,
-        toolId: 1, // Assuming risk analyzer tool ID is 1
-        status: 'Success',
-        requestPayload: policyData,
-        responsePayload: result,
-        latency: 0, // Would calculate actual latency in production
-      });
-    }
-
-    res.json(result);
+    const runId = uuidv4();
+    
+    // Create a run record
+    await storage.createRun({
+      id: runId,
+      agentId: req.body.agentId || null,
+      status: 'Running',
+      type: 'RiskAnalysis',
+      input: JSON.stringify(policyData),
+      startTime: new Date(),
+      endTime: null,
+      metrics: {},
+      userId: req.body.userId || null
+    });
+    
+    const analysisResult = await analyzeRisk(policyData);
+    
+    // Update run status
+    await storage.updateRunStatus(runId, 'Completed');
+    
+    res.json(analysisResult);
   } catch (error) {
     console.error('Error analyzing risk:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to analyze risk' });
   }
 });
 
-// Analyze claim
+// Route for analyzing insurance claims
 router.post('/analyze-claim', async (req: Request, res: Response) => {
   try {
-    const { claimData, runId, agentId } = req.body;
+    const { claimData } = req.body;
     
     if (!claimData) {
       return res.status(400).json({ error: 'Claim data is required' });
     }
-
-    const result = await ai.analyzeClaim(claimData);
     
-    // Record tool execution if runId and agentId are provided
-    if (runId && agentId) {
-      await storage.createToolExecution({
-        runId,
-        agentId,
-        toolId: 2, // Assuming claim analyzer tool ID is 2
-        status: 'Success',
-        requestPayload: claimData,
-        responsePayload: result,
-        latency: 0, // Would calculate actual latency in production
-      });
-    }
-
-    res.json(result);
+    const runId = uuidv4();
+    
+    // Create a run record
+    await storage.createRun({
+      id: runId,
+      agentId: req.body.agentId || null,
+      status: 'Running',
+      type: 'ClaimAnalysis',
+      input: JSON.stringify(claimData),
+      startTime: new Date(),
+      endTime: null,
+      metrics: {},
+      userId: req.body.userId || null
+    });
+    
+    const analysisResult = await analyzeClaim(claimData);
+    
+    // Update run status
+    await storage.updateRunStatus(runId, 'Completed');
+    
+    res.json(analysisResult);
   } catch (error) {
     console.error('Error analyzing claim:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to analyze claim' });
   }
 });
 
-// Text analysis
+// Route for text analysis (sentiment, summary, classification, extraction)
 router.post('/analyze-text', async (req: Request, res: Response) => {
   try {
     const { text, type, options } = req.body;
@@ -100,121 +116,181 @@ router.post('/analyze-text', async (req: Request, res: Response) => {
     if (!text || !type) {
       return res.status(400).json({ error: 'Text and analysis type are required' });
     }
-
-    const result = await ai.analyzeText({ text, type, options });
-    res.json(result);
+    
+    const analysisResult = await analyzeText({ text, type, options });
+    
+    res.json(analysisResult);
   } catch (error) {
     console.error('Error analyzing text:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to analyze text' });
   }
 });
 
-// Customer service chat
+// Route for customer service chat
 router.post('/customer-chat', async (req: Request, res: Response) => {
   try {
-    const { history, customerInfo } = req.body;
+    const { message, conversationHistory, customerInfo } = req.body;
     
-    if (!history || !Array.isArray(history)) {
-      return res.status(400).json({ error: 'Chat history array is required' });
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
     }
-
-    const response = await ai.customerServiceChat(history, customerInfo);
-    res.json({ response });
+    
+    const chatResponse = await customerServiceChat(message, conversationHistory || [], customerInfo || {});
+    
+    res.json(chatResponse);
   } catch (error) {
     console.error('Error in customer chat:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to process customer chat' });
   }
 });
 
-// Generate agent component
+// Route for generating agent components
 router.post('/generate-component', async (req: Request, res: Response) => {
   try {
-    const { type, name, description, inputs, agentId } = req.body;
+    const { componentType, description, agentId, context } = req.body;
     
-    if (!type || !name || !description || !agentId) {
-      return res.status(400).json({ error: 'Type, name, description, and agentId are required' });
+    if (!componentType || !description || !agentId) {
+      return res.status(400).json({ error: 'Component type, description, and agent ID are required' });
     }
-
-    const content = await ai.generateAgentComponent(type, name, description, inputs);
     
-    // Save the component to the database
-    const component = await storage.createAgentComponent({
-      agentId,
-      type,
-      name,
-      description,
-      content,
-      configuration: inputs || {}
-    });
-
-    res.json({ component });
-  } catch (error) {
-    console.error('Error generating component:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Execute run with an agent
-router.post('/execute-run', async (req: Request, res: Response) => {
-  try {
-    const { agentId, input, userId } = req.body;
-    
-    if (!agentId || !input) {
-      return res.status(400).json({ error: 'Agent ID and input are required' });
-    }
-
-    // Get the agent from storage
     const agent = await storage.getAgentById(agentId);
     if (!agent) {
       return res.status(404).json({ error: 'Agent not found' });
     }
-
-    // Get agent components
-    const components = await storage.getAgentComponents(agentId);
     
-    // Find prompt components
-    const prompts = components.filter(c => c.type === 'prompt');
-    const systemPrompt = prompts.find(p => p.name.toLowerCase().includes('system'))?.content || '';
-    
-    // Use first prompt if no system prompt found
-    const effectiveSystemPrompt = systemPrompt || prompts[0]?.content || 'You are a helpful AI assistant in the insurance industry.';
-    
-    // Generate response using the agent's configuration
-    const result = await ai.generateText({
-      systemPrompt: effectiveSystemPrompt,
-      userPrompt: input,
-      temperature: 0.7
-    });
-
-    // Create a run record
     const runId = uuidv4();
-    const run = await storage.createRun({
+    
+    // Create a run record
+    await storage.createRun({
       id: runId,
-      agentId,
-      agentName: agent.name,
-      agentIcon: "📊", // Default icon
-      status: "Success",
-      steps: [{
-        type: "Prompt",
-        name: "Initial prompt",
-        tokens_in: result.usage.promptTokens,
-        tokens_out: result.usage.completionTokens,
-        latency: 0, // Would calculate actual latency in production
-        description: "Initial user query processed by agent"
-      }],
-      latency: 0, // Would calculate actual latency in production
-      cost: result.usage.totalTokens,
-      timestamp: new Date()
+      agentId: agentId,
+      status: 'Running',
+      type: 'ComponentGeneration',
+      input: JSON.stringify({ componentType, description, context }),
+      startTime: new Date(),
+      endTime: null,
+      metrics: {},
+      userId: req.body.userId || null
     });
-
-    res.json({
-      runId,
-      response: result.text,
-      usage: result.usage
+    
+    const component = await generateAgentComponent(
+      componentType,
+      description,
+      agent,
+      context || {}
+    );
+    
+    // Create the component in the database
+    const savedComponent = await storage.createAgentComponent({
+      agentId: agentId,
+      type: componentType,
+      name: component.name,
+      description: description,
+      configuration: component.configuration,
+      code: component.code,
+      status: 'Draft',
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
+    
+    // Update run status
+    await storage.updateRunStatus(runId, 'Completed');
+    
+    res.json(savedComponent);
   } catch (error) {
-    console.error('Error executing run:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error generating component:', error);
+    res.status(500).json({ error: 'Failed to generate component' });
+  }
+});
+
+// Route for executing tool runs with logging
+router.post('/execute-run', async (req: Request, res: Response) => {
+  const { toolId, runId, input, agentId } = req.body;
+  
+  if (!toolId || !input) {
+    return res.status(400).json({ error: 'Tool ID and input are required' });
+  }
+  
+  try {
+    // Get the tool
+    const tool = await storage.getToolById(parseInt(toolId));
+    if (!tool) {
+      return res.status(404).json({ error: 'Tool not found' });
+    }
+    
+    // Create tool execution record
+    const startTime = new Date();
+    
+    // Create a unique execution ID
+    const executionId = parseInt(Date.now().toString().slice(-9));
+    
+    // Record the execution
+    await storage.createToolExecution({
+      id: executionId,
+      toolId: parseInt(toolId),
+      runId: runId || null,
+      agentId: agentId || null,
+      status: 'Running',
+      requestPayload: input,
+      responsePayload: null,
+      errorMessage: null,
+      timestamp: startTime,
+      latency: null
+    });
+    
+    // Get the appropriate AI service based on the tool endpoint
+    let result;
+    const inputData = typeof input === 'string' ? JSON.parse(input) : input;
+    
+    if (tool.endpoint === '/api/ai/analyze-risk') {
+      result = await analyzeRisk(inputData);
+    } else if (tool.endpoint === '/api/ai/analyze-claim') {
+      result = await analyzeClaim(inputData);
+    } else if (tool.endpoint === '/api/ai/analyze-text') {
+      result = await analyzeText(inputData);
+    } else if (tool.endpoint === '/api/ai/generate-text') {
+      result = await generateText(inputData);
+    } else if (tool.endpoint === '/api/ai/customer-chat') {
+      result = await customerServiceChat(
+        inputData.message,
+        inputData.conversationHistory || [],
+        inputData.customerInfo || {}
+      );
+    } else {
+      throw new Error(`Unsupported tool endpoint: ${tool.endpoint}`);
+    }
+    
+    const endTime = new Date();
+    const latency = endTime.getTime() - startTime.getTime();
+    
+    // Update the execution with results
+    await storage.updateToolExecution(executionId, {
+      status: 'Completed',
+      responsePayload: result,
+      latency
+    });
+    
+    res.json({
+      executionId,
+      toolId,
+      runId,
+      agentId,
+      result,
+      latency
+    });
+    
+  } catch (error) {
+    console.error('Error executing tool:', error);
+    
+    // Update the execution with error if we have an executionId
+    if (req.body.executionId) {
+      await storage.updateToolExecution(parseInt(req.body.executionId), {
+        status: 'Failed',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+    
+    res.status(500).json({ error: 'Failed to execute tool' });
   }
 });
 

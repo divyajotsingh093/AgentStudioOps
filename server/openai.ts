@@ -1,12 +1,19 @@
 import OpenAI from "openai";
 
-// The newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const MODEL = "gpt-4o";
+// The newest OpenAI model is "gpt-4o" which was released May 13, 2024. 
+// Do not change this unless explicitly requested by the user.
+const DEFAULT_MODEL = "gpt-4o";
 
 // Initialize OpenAI client
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-// Agent capabilities
+// Check if OpenAI API key is configured
+if (!process.env.OPENAI_API_KEY) {
+  console.warn("WARNING: OPENAI_API_KEY is not set. OpenAI API calls will fail.");
+}
+
 export interface PromptRequest {
   systemPrompt: string;
   userPrompt: string;
@@ -21,251 +28,322 @@ export interface AnalysisRequest {
   options?: Record<string, any>;
 }
 
-// Basic text generation 
+/**
+ * Generate text using OpenAI's chat completion
+ */
 export async function generateText(request: PromptRequest): Promise<{
   text: string;
-  usage: { promptTokens: number; completionTokens: number; totalTokens: number };
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
 }> {
   try {
+    const { systemPrompt, userPrompt, model = DEFAULT_MODEL, temperature = 0.7, maxTokens = 1000 } = request;
+    
     const response = await openai.chat.completions.create({
-      model: request.model || MODEL,
+      model,
       messages: [
-        { role: "system", content: request.systemPrompt },
-        { role: "user", content: request.userPrompt }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
       ],
-      temperature: request.temperature ?? 0.7,
-      max_tokens: request.maxTokens,
+      temperature,
+      max_tokens: maxTokens,
     });
-
+    
     return {
       text: response.choices[0].message.content || "",
-      usage: {
-        promptTokens: response.usage?.prompt_tokens || 0,
-        completionTokens: response.usage?.completion_tokens || 0,
-        totalTokens: response.usage?.total_tokens || 0
-      }
+      model: response.model,
+      promptTokens: response.usage?.prompt_tokens || 0,
+      completionTokens: response.usage?.completion_tokens || 0,
+      totalTokens: response.usage?.total_tokens || 0,
     };
   } catch (error) {
     console.error("Error generating text:", error);
-    throw new Error(`Failed to generate text: ${error.message}`);
+    throw new Error(`Failed to generate text: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
 
-// Underwriting assistance functions
+/**
+ * Analyze insurance policy data for risk assessment
+ */
 export async function analyzeRisk(policyData: any): Promise<{
   riskScore: number;
   recommendations: string[];
   explanation: string;
+  factors: Record<string, number>;
 }> {
   try {
     const prompt = `
-    You are an expert insurance underwriter. Please analyze the following policy data and provide:
-    1. A risk score from 1-10 (where 10 is highest risk)
-    2. A set of recommendations for mitigating risk
-    3. A detailed explanation of your analysis
-
-    Policy data:
-    ${JSON.stringify(policyData, null, 2)}
-    
-    Respond with JSON in this format: 
-    {
-      "riskScore": number,
-      "recommendations": string[],
-      "explanation": string
-    }
+      Analyze the following insurance policy data for risk assessment.
+      Provide a risk score from 1-10 (where 10 is highest risk), specific recommendations, 
+      a detailed explanation of your assessment, and a breakdown of risk factors with their weights.
+      
+      Insurance Policy Data:
+      ${JSON.stringify(policyData, null, 2)}
+      
+      Respond in this JSON format only:
+      {
+        "riskScore": number,
+        "recommendations": string[],
+        "explanation": string,
+        "factors": {
+          "factorName1": number,
+          "factorName2": number,
+          ...
+        }
+      }
     `;
-
+    
     const response = await openai.chat.completions.create({
-      model: MODEL,
+      model: DEFAULT_MODEL,
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" }
     });
-
-    return JSON.parse(response.choices[0].message.content);
+    
+    const content = response.choices[0].message.content || "{}";
+    return JSON.parse(content);
   } catch (error) {
     console.error("Error analyzing risk:", error);
-    throw new Error(`Failed to analyze risk: ${error.message}`);
+    throw new Error(`Failed to analyze risk: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
 
-// Claims processing assistance
+/**
+ * Analyze insurance claim data for fraud detection and validation
+ */
 export async function analyzeClaim(claimData: any): Promise<{
-  fraudRisk: 'low' | 'medium' | 'high';
+  fraudRisk: string;
   validationIssues: string[];
   processingRecommendation: string;
+  confidenceScore: number;
+  explanation: string;
 }> {
   try {
     const prompt = `
-    You are an expert insurance claims processor. Please analyze the following claim data and provide:
-    1. A fraud risk assessment (low, medium, high)
-    2. Any validation issues or missing information
-    3. A recommendation for processing (approve, deny, request more information)
-
-    Claim data:
-    ${JSON.stringify(claimData, null, 2)}
-    
-    Respond with JSON in this format: 
-    {
-      "fraudRisk": "low" | "medium" | "high",
-      "validationIssues": string[],
-      "processingRecommendation": string
-    }
+      Analyze the following insurance claim data for fraud detection and validation.
+      Assess fraud risk (low, medium, high), identify any validation issues, 
+      recommend next steps for processing, provide a confidence score (0-1), 
+      and explain your analysis.
+      
+      Claim Data:
+      ${JSON.stringify(claimData, null, 2)}
+      
+      Respond in this JSON format only:
+      {
+        "fraudRisk": string,
+        "validationIssues": string[],
+        "processingRecommendation": string,
+        "confidenceScore": number,
+        "explanation": string
+      }
     `;
-
+    
     const response = await openai.chat.completions.create({
-      model: MODEL,
+      model: DEFAULT_MODEL,
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" }
     });
-
-    return JSON.parse(response.choices[0].message.content);
+    
+    const content = response.choices[0].message.content || "{}";
+    return JSON.parse(content);
   } catch (error) {
     console.error("Error analyzing claim:", error);
-    throw new Error(`Failed to analyze claim: ${error.message}`);
+    throw new Error(`Failed to analyze claim: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
 
-// Text analysis for customer communications, policy documents, etc.
+/**
+ * Analyze text for sentiment, summary, classification, or data extraction
+ */
 export async function analyzeText(request: AnalysisRequest): Promise<any> {
   try {
-    let prompt = "";
-    let responseFormat: { type: "json_object" } | undefined;
-
-    switch (request.type) {
-      case 'sentiment':
-        prompt = `Analyze the sentiment of the following text. Respond with JSON containing 'score' (1-5 where 5 is most positive), 'sentiment' (positive, negative, neutral), and 'explanation'. Text: ${request.text}`;
-        responseFormat = { type: "json_object" };
-        break;
-      case 'summary':
-        prompt = `Summarize the following text in a concise manner: ${request.text}`;
-        break;
-      case 'classification':
-        const categories = request.options?.categories?.join(', ') || 'general categories';
-        prompt = `Classify the following text into one of these categories: ${categories}. Respond with JSON containing 'category' and 'confidence' (0-1). Text: ${request.text}`;
-        responseFormat = { type: "json_object" };
-        break;
-      case 'extraction':
-        const fields = request.options?.fields?.join(', ') || 'key information';
-        prompt = `Extract the following information from the text: ${fields}. Respond with JSON. Text: ${request.text}`;
-        responseFormat = { type: "json_object" };
-        break;
-      default:
-        throw new Error(`Unsupported analysis type: ${request.type}`);
-    }
-
-    const response = await openai.chat.completions.create({
-      model: MODEL,
-      messages: [{ role: "user", content: prompt }],
-      response_format: responseFormat,
-      temperature: 0.3,
-    });
-
-    const content = response.choices[0].message.content;
+    const { text, type, options = {} } = request;
     
-    return request.type === 'summary' 
-      ? { summary: content } 
-      : JSON.parse(content);
-  } catch (error) {
-    console.error(`Error analyzing text (${request.type}):`, error);
-    throw new Error(`Failed to analyze text: ${error.message}`);
-  }
-}
-
-// Chat completion for customer service agents
-export async function customerServiceChat(
-  history: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
-  customerInfo?: any
-): Promise<string> {
-  try {
-    // Add customer info to system prompt if available
-    let messages = [...history];
-    
-    if (customerInfo && !messages.some(m => m.role === 'system')) {
-      messages.unshift({
-        role: 'system',
-        content: `You are a helpful insurance customer service agent. 
-        Current customer information: ${JSON.stringify(customerInfo, null, 2)}`
-      });
-    }
-
-    const response = await openai.chat.completions.create({
-      model: MODEL,
-      messages,
-      temperature: 0.7,
-    });
-
-    return response.choices[0].message.content;
-  } catch (error) {
-    console.error("Error in customer service chat:", error);
-    throw new Error(`Failed to generate chat response: ${error.message}`);
-  }
-}
-
-// Function to generate agent components based on specifications
-export async function generateAgentComponent(
-  type: 'prompt' | 'policy' | 'context',
-  name: string,
-  description: string,
-  inputs?: Record<string, any>
-): Promise<string> {
-  try {
-    let prompt = "";
+    let prompt: string;
     
     switch (type) {
-      case 'prompt':
+      case 'sentiment':
         prompt = `
-        Create a well-structured prompt for an AI agent with the following specifications:
-        - Name: ${name}
-        - Description: ${description}
-        - Inputs: ${JSON.stringify(inputs || {}, null, 2)}
-        
-        The prompt should be comprehensive and clearly define the agent's role, constraints, and expected outputs.
+          Analyze the sentiment of the following text. Provide a rating from 1-5 (where 1 is very negative and 5 is very positive),
+          a confidence score between 0-1, and a brief explanation of your analysis.
+          
+          Text: "${text}"
+          
+          Respond in this JSON format only:
+          {
+            "sentiment": number,
+            "confidence": number,
+            "explanation": string
+          }
         `;
         break;
-      case 'policy':
+      
+      case 'summary':
+        const maxLength = options.maxLength || 200;
         prompt = `
-        Create a policy document for an AI agent with the following specifications:
-        - Name: ${name}
-        - Description: ${description}
-        
-        The policy should define:
-        1. Ethical guidelines
-        2. Operational boundaries
-        3. Data handling rules
-        4. User interaction protocols
-        5. Compliance requirements
+          Summarize the following text in a concise way, with a maximum length of ${maxLength} characters.
+          
+          Text: "${text}"
+          
+          Respond in this JSON format only:
+          {
+            "summary": string
+          }
         `;
         break;
-      case 'context':
-        prompt = `
-        Create a context document for an AI agent with the following specifications:
-        - Name: ${name}
-        - Description: ${description}
         
-        The context should provide:
-        1. Background information
-        2. Domain-specific knowledge
-        3. Industry terminology and definitions
-        4. Relevant examples and precedents
-        5. Common scenarios the agent will encounter
+      case 'classification':
+        const categories = options.categories || ['General', 'Inquiry', 'Complaint', 'Feedback'];
+        prompt = `
+          Classify the following text into one of these categories: ${categories.join(', ')}.
+          Also provide a confidence score between 0-1 for your classification.
+          
+          Text: "${text}"
+          
+          Respond in this JSON format only:
+          {
+            "category": string,
+            "confidence": number,
+            "explanation": string
+          }
         `;
         break;
+        
+      case 'extraction':
+        const entities = options.entities || ['Date', 'Amount', 'PolicyNumber', 'ClaimNumber', 'Name', 'Email', 'Phone'];
+        prompt = `
+          Extract the following entities from the text if they exist: ${entities.join(', ')}.
+          
+          Text: "${text}"
+          
+          Respond in this JSON format only:
+          {
+            "entities": {
+              "entityName1": "extractedValue1",
+              "entityName2": "extractedValue2",
+              ...
+            }
+          }
+        `;
+        break;
+        
       default:
-        throw new Error(`Unsupported component type: ${type}`);
+        throw new Error(`Unknown analysis type: ${type}`);
     }
-
+    
     const response = await openai.chat.completions.create({
-      model: MODEL,
+      model: DEFAULT_MODEL,
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
+      response_format: { type: "json_object" }
     });
-
-    return response.choices[0].message.content;
+    
+    const content = response.choices[0].message.content || "{}";
+    return JSON.parse(content);
   } catch (error) {
-    console.error(`Error generating agent component (${type}):`, error);
-    throw new Error(`Failed to generate agent component: ${error.message}`);
+    console.error("Error analyzing text:", error);
+    throw new Error(`Failed to analyze text: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
 
-// Export the OpenAI instance for direct access
-export { openai };
+/**
+ * Chat with a customer service AI assistant
+ */
+export async function customerServiceChat(
+  message: string,
+  conversationHistory: Array<{ role: string; content: string }> = [],
+  customerInfo: Record<string, any> = {}
+): Promise<{
+  response: string;
+  sentimentAnalysis?: { sentiment: string; score: number };
+  suggestedActions?: string[];
+  needsHumanEscalation: boolean;
+}> {
+  try {
+    const systemPrompt = `
+      You are an AI assistant for an insurance company.
+      Be helpful, professional, and concise in your responses.
+      Customer information: ${JSON.stringify(customerInfo)}
+      
+      If the query requires human intervention, indicate this in your response.
+      
+      Analyze the sentiment of the customer message, and suggest appropriate follow-up actions.
+    `;
+    
+    // Prepare conversation history in the format OpenAI expects
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...conversationHistory,
+      { role: "user", content: message }
+    ];
+    
+    const response = await openai.chat.completions.create({
+      model: DEFAULT_MODEL,
+      messages,
+      response_format: { type: "json_object" }
+    });
+    
+    const content = response.choices[0].message.content || "{}";
+    const result = JSON.parse(content);
+    
+    // If the model didn't return the expected format, attempt to parse the response
+    if (!result.response) {
+      return {
+        response: content,
+        needsHumanEscalation: content.toLowerCase().includes("human") || content.toLowerCase().includes("escalat")
+      };
+    }
+    
+    return result;
+  } catch (error) {
+    console.error("Error in customer chat:", error);
+    throw new Error(`Failed in customer chat: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}
+
+/**
+ * Generate an agent component based on a description
+ */
+export async function generateAgentComponent(
+  componentType: string,
+  description: string,
+  agent: any,
+  context: Record<string, any> = {}
+): Promise<{
+  name: string;
+  configuration: Record<string, any>;
+  code: string;
+}> {
+  try {
+    const prompt = `
+      Generate a ${componentType} component for an AI agent with the following details:
+      
+      Agent: ${JSON.stringify(agent, null, 2)}
+      Description: ${description}
+      Additional Context: ${JSON.stringify(context, null, 2)}
+      
+      Create a suitable component that aligns with the agent's purpose and capabilities.
+      Provide a name, configuration settings, and any necessary code.
+      
+      Respond in this JSON format only:
+      {
+        "name": string,
+        "configuration": object,
+        "code": string
+      }
+    `;
+    
+    const response = await openai.chat.completions.create({
+      model: DEFAULT_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+      temperature: 0.7
+    });
+    
+    const content = response.choices[0].message.content || "{}";
+    return JSON.parse(content);
+  } catch (error) {
+    console.error("Error generating component:", error);
+    throw new Error(`Failed to generate component: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}

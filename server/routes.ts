@@ -66,6 +66,9 @@ function broadcastToSession(
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes for the AI agent platform
   
+  // Register AI routes
+  app.use('/api/ai', aiRoutes);
+  
   // Agents API
   app.get("/api/agents", async (req, res) => {
     try {
