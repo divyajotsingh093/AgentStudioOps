@@ -12,6 +12,7 @@ import {
   insertToolExecutionSchema, toolTypeEnum, toolAuthTypeEnum, toolStatusEnum
 } from "@shared/schema";
 import { z } from "zod";
+import aiRoutes from './ai-routes';
 
 // Collaborative editing types
 interface CollaborationSession {
