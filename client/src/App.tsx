@@ -60,6 +60,12 @@ function Router() {
         <Route path="/agent-orchestration/new" component={lazy(() => import('@/pages/agent-orchestration/new'))} />
         <Route path="/agent-orchestration/:id" component={lazy(() => import('@/pages/agent-orchestration/[id]'))} />
         
+        {/* Identity Providers (IDP) */}
+        <Route path="/idp" component={lazy(() => import('@/pages/idp'))} />
+        <Route path="/idp/providers/new" component={lazy(() => import('@/pages/idp/providers/new'))} />
+        <Route path="/idp/providers/:id/edit" component={lazy(() => import('@/pages/idp/providers/[id]/edit'))} />
+        <Route path="/idp/providers/:id" component={lazy(() => import('@/pages/idp/providers/[id]'))} />
+        
         {/* Chat */}
         <Route path="/chat" component={lazy(() => import('@/pages/chat'))} />
         

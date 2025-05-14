@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'wouter';
 import { Helmet } from 'react-helmet';
-import { Plus, CircleCheck, XCircle, MoreHorizontal } from 'lucide-react';
+import { PlusIcon, ExternalLink, RefreshCcw, Search } from 'lucide-react';
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   Card,
   CardContent,
@@ -12,20 +21,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/common/PageHeader';
-import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
-// Define the IDP Provider type based on schema
+// Define the IDP provider interface
 interface IdpProvider {
   id: number;
   name: string;
@@ -38,226 +39,269 @@ interface IdpProvider {
   lastVerifiedAt: string | null;
 }
 
-// Status badge component
-const StatusBadge = ({ status }: { status: string }) => {
-  const getVariant = () => {
+const IdpProvidersPage: React.FC = () => {
+  const [_, navigate] = useLocation();
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const { data: providers, isLoading, isError, refetch } = useQuery({
+    queryKey: ['/api/idp/providers'],
+  });
+  
+  // Filter providers by search query
+  const filteredProviders = providers ? 
+    providers.filter((provider: IdpProvider) => 
+      provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (provider.description && provider.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      provider.type.toLowerCase().includes(searchQuery.toLowerCase())
+    ) : [];
+  
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'Active':
         return 'success';
       case 'Testing':
-        return 'warning';
+        return 'secondary';
       case 'Inactive':
         return 'outline';
       case 'Deprecated':
         return 'destructive';
       default:
-        return 'secondary';
+        return 'default';
     }
   };
-
-  return (
-    <Badge variant={getVariant() as any}>{status}</Badge>
-  );
-};
-
-// Provider card component for each IDP provider
-const ProviderCard = ({ provider }: { provider: IdpProvider }) => {
-  const { toast } = useToast();
   
-  const handleVerify = async (id: number) => {
-    try {
-      const response = await fetch(`/api/idp/providers/${id}/verify`, {
-        method: 'POST',
-      });
-      
-      if (response.ok) {
-        toast({
-          title: 'Provider verified',
-          description: 'The provider connection was successfully verified.',
-          variant: 'success',
-        });
-      } else {
-        const error = await response.json();
-        toast({
-          title: 'Verification failed',
-          description: error.error || 'Could not verify provider connection.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Verification error',
-        description: 'An error occurred while verifying the provider.',
-        variant: 'destructive',
-      });
+  const getProviderTypeIcon = (type: string) => {
+    switch (type) {
+      case 'OIDC':
+        return '🔑';
+      case 'SAML':
+        return '🔐';
+      case 'OAuth2':
+        return '🔒';
+      case 'LDAP':
+        return '👥';
+      case 'Custom':
+        return '⚙️';
+      default:
+        return '📋';
     }
   };
-
-  return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start">
+  
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <CardTitle className="text-lg font-semibold">{provider.name}</CardTitle>
-            <CardDescription className="text-sm text-gray-500">
-              {provider.type} Provider
-            </CardDescription>
+            <Skeleton className="h-8 w-64 mb-2" />
+            <Skeleton className="h-4 w-96" />
           </div>
-          <StatusBadge status={provider.status} />
+          <Skeleton className="h-10 w-40" />
         </div>
-      </CardHeader>
-      <CardContent className="pb-2">
-        <p className="text-sm text-gray-600 line-clamp-2">
-          {provider.description || 'No description provided.'}
-        </p>
-        <div className="mt-2 text-xs text-gray-500">
-          Last verified: {provider.lastVerifiedAt 
-            ? new Date(provider.lastVerifiedAt).toLocaleString() 
-            : 'Never'}
-        </div>
-      </CardContent>
-      <CardFooter className="flex justify-between pt-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/idp/providers/${provider.id}`}>
-            View Details
-          </Link>
-        </Button>
         
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Actions</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleVerify(provider.id)}>
-              Verify Connection
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/idp/providers/${provider.id}/edit`}>
-                Edit Provider
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/idp/providers/${provider.id}/mappings`}>
-                Configure Mappings
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/idp/providers/${provider.id}/rules`}>
-                Manage Rules
-              </Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </CardFooter>
-    </Card>
-  );
-};
-
-// Skeleton loader for provider cards while loading
-const ProviderCardSkeleton = () => (
-  <Card className="overflow-hidden">
-    <CardHeader className="pb-3">
-      <div className="flex justify-between items-start">
-        <div>
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-4 w-24 mt-2" />
-        </div>
-        <Skeleton className="h-6 w-16 rounded-full" />
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <Skeleton className="h-5 w-32 mb-2" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+              <Skeleton className="h-10 w-72" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </CardHeader>
-    <CardContent className="pb-2">
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-3/4 mt-2" />
-      <Skeleton className="h-3 w-32 mt-3" />
-    </CardContent>
-    <CardFooter className="flex justify-between pt-2">
-      <Skeleton className="h-9 w-24" />
-      <Skeleton className="h-8 w-8 rounded-full" />
-    </CardFooter>
-  </Card>
-);
+    );
+  }
 
-// Empty state component when no providers exist
-const EmptyState = () => (
-  <div className="text-center p-8 border border-dashed rounded-lg">
-    <div className="mx-auto w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center mb-4">
-      <XCircle className="h-6 w-6 text-neutral-400" />
-    </div>
-    <h3 className="text-lg font-medium">No Identity Providers</h3>
-    <p className="text-sm text-gray-500 mt-1 mb-4">
-      You haven't added any identity providers yet.
-    </p>
-    <Button asChild>
-      <Link href="/idp/providers/new">
-        <Plus className="h-4 w-4 mr-2" />
-        Add Provider
-      </Link>
-    </Button>
-  </div>
-);
+  // Error state
+  if (isError) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <PageHeader
+          title="Identity Providers"
+          description="Manage authentication and user identity providers"
+          actions={
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCcw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          }
+        />
+        
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-destructive">Error Loading Providers</CardTitle>
+            <CardDescription>
+              There was an error loading the identity providers. Please try again or contact support.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => refetch()} variant="outline">
+              <RefreshCcw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-// Main IDP Providers page component
-const IdpProvidersPage = () => {
-  const { data: providers, isLoading, isError } = useQuery({
-    queryKey: ['/api/idp/providers'],
-  });
-  
   return (
     <>
       <Helmet>
         <title>Identity Providers | Neutrinos AI</title>
         <meta 
           name="description" 
-          content="Manage external identity providers for authentication and authorization in the Neutrinos AI platform."
+          content="Manage authentication providers and user identity sources for Neutrinos AI agents."
         />
       </Helmet>
       
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-8">
         <PageHeader
           title="Identity Providers"
-          description="Manage external identity sources and authentication providers"
+          description="Manage authentication and user identity sources"
           actions={
-            <Button asChild>
-              <Link href="/idp/providers/new">
-                <Plus className="h-4 w-4 mr-2" />
-                New Provider
-              </Link>
+            <Button onClick={() => navigate('/idp/providers/new')}>
+              <PlusIcon className="h-4 w-4 mr-2" />
+              New Provider
             </Button>
           }
         />
         
-        <div className="mt-8">
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3].map((i) => (
-                <ProviderCardSkeleton key={i} />
-              ))}
+        <Card className="mt-6">
+          <CardHeader>
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+              <div>
+                <CardTitle>Providers</CardTitle>
+                <CardDescription>
+                  {providers && providers.length > 0 
+                    ? `${providers.length} providers configured` 
+                    : 'No providers configured yet'
+                  }
+                </CardDescription>
+              </div>
+              <div className="w-full md:w-72">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search providers..."
+                    className="pl-8"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
-          ) : isError ? (
-            <div className="text-center p-8 border border-red-200 bg-red-50 rounded-lg">
-              <h3 className="text-lg font-medium text-red-800">Failed to load providers</h3>
-              <p className="text-sm text-red-600 mt-1">
-                There was an error loading the identity providers. Please try again.
-              </p>
-              <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
-                Retry
+          </CardHeader>
+          <CardContent>
+            {filteredProviders.length === 0 && (
+              <div className="text-center py-8 border rounded-md bg-muted/20">
+                {providers && providers.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-muted-foreground">No providers match your search criteria</p>
+                    <Button variant="link" onClick={() => setSearchQuery('')}>
+                      Clear search
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-muted-foreground">No identity providers configured</p>
+                    <Button onClick={() => navigate('/idp/providers/new')}>
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      Add Provider
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {filteredProviders.length > 0 && (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Last Verified</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredProviders.map((provider: IdpProvider) => (
+                      <TableRow
+                        key={provider.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => navigate(`/idp/providers/${provider.id}`)}
+                      >
+                        <TableCell>
+                          <div className="font-medium">{provider.name}</div>
+                          {provider.description && (
+                            <div className="text-sm text-muted-foreground line-clamp-1">
+                              {provider.description}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <span>{getProviderTypeIcon(provider.type)}</span>
+                            <span>{provider.type}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusBadgeVariant(provider.status)}>
+                            {provider.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {provider.lastVerifiedAt ? (
+                            format(new Date(provider.lastVerifiedAt), 'MMM d, yyyy')
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Never</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/idp/providers/${provider.id}`);
+                            }}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            <span className="sr-only">View</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+          {filteredProviders.length > 0 && (
+            <CardFooter className="flex justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredProviders.length} of {providers.length} providers
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <RefreshCcw className="h-4 w-4 mr-2" />
+                Refresh
               </Button>
-            </div>
-          ) : providers?.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {providers.map((provider: IdpProvider) => (
-                <ProviderCard key={provider.id} provider={provider} />
-              ))}
-            </div>
+            </CardFooter>
           )}
-        </div>
+        </Card>
       </div>
     </>
   );
