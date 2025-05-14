@@ -10,7 +10,9 @@ import {
   agentTools, type AgentTool, type InsertAgentTool, type UpdateAgentTool,
   toolExecutions, type ToolExecution, type InsertToolExecution,
   documents, type Document, type InsertDocument,
-  documentAnalysis, type DocumentAnalysis, type InsertDocumentAnalysis
+  documentAnalysis, type DocumentAnalysis, type InsertDocumentAnalysis,
+  triggers, type Trigger, type InsertTrigger, type UpdateTrigger,
+  triggerEvents, type TriggerEvent, type InsertTriggerEvent
 } from "@shared/schema";
 import { db } from './db';
 import { eq } from 'drizzle-orm';
@@ -89,6 +91,18 @@ export interface IStorage {
   getDocumentAnalysisById(id: number): Promise<DocumentAnalysis | undefined>;
   createDocumentAnalysis(analysis: InsertDocumentAnalysis): Promise<DocumentAnalysis>;
   updateDocumentAnalysis(id: number, analysis: Partial<Omit<DocumentAnalysis, "id">>): Promise<DocumentAnalysis | undefined>;
+  
+  // Trigger methods
+  getTriggers(agentId?: string): Promise<Trigger[]>;
+  getTriggerById(id: number): Promise<Trigger | undefined>;
+  createTrigger(trigger: InsertTrigger): Promise<Trigger>;
+  updateTrigger(id: number, trigger: UpdateTrigger): Promise<Trigger | undefined>;
+  deleteTrigger(id: number): Promise<boolean>;
+  
+  getTriggerEvents(triggerId?: number): Promise<TriggerEvent[]>;
+  getTriggerEventById(id: number): Promise<TriggerEvent | undefined>;
+  createTriggerEvent(event: InsertTriggerEvent): Promise<TriggerEvent>;
+  updateTriggerEvent(id: number, event: Partial<Omit<TriggerEvent, "id">>): Promise<TriggerEvent | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -104,6 +118,8 @@ export class MemStorage implements IStorage {
   private toolExecutions: Map<number, ToolExecution>;
   private documents: Map<number, Document>;
   private documentAnalyses: Map<number, DocumentAnalysis>;
+  private triggers: Map<number, Trigger>;
+  private triggerEvents: Map<number, TriggerEvent>;
   private currentUserId: number;
   private currentIssueId: number;
   private currentComponentId: number;
@@ -114,6 +130,8 @@ export class MemStorage implements IStorage {
   private currentToolExecutionId: number;
   private currentDocumentId: number;
   private currentDocumentAnalysisId: number;
+  private currentTriggerId: number;
+  private currentTriggerEventId: number;
 
   constructor() {
     this.users = new Map();
@@ -128,6 +146,8 @@ export class MemStorage implements IStorage {
     this.toolExecutions = new Map();
     this.documents = new Map();
     this.documentAnalyses = new Map();
+    this.triggers = new Map();
+    this.triggerEvents = new Map();
     this.currentUserId = 1;
     this.currentIssueId = 1;
     this.currentComponentId = 1;
@@ -138,6 +158,8 @@ export class MemStorage implements IStorage {
     this.currentToolExecutionId = 1;
     this.currentDocumentId = 1;
     this.currentDocumentAnalysisId = 1;
+    this.currentTriggerId = 1;
+    this.currentTriggerEventId = 1;
     
     // Initialize with mock data
     this.initializeMockData();
@@ -934,6 +956,9 @@ export class DatabaseStorage implements IStorage {
   // Import document-related types
   private documents = db.query.documents;
   private documentAnalysis = db.query.documentAnalysis;
+  // Import trigger-related types
+  private triggers = db.query.triggers;
+  private triggerEvents = db.query.triggerEvents;
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));

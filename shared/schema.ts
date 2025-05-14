@@ -272,3 +272,43 @@ export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type DocumentAnalysis = typeof documentAnalysis.$inferSelect;
 export type InsertDocumentAnalysis = z.infer<typeof insertDocumentAnalysisSchema>;
+
+// Trigger Management Schema
+export const triggerTypeEnum = z.enum(['Webhook', 'Schedule', 'Event', 'DataChange', 'Manual']);
+export const triggerStatusEnum = z.enum(['Active', 'Inactive', 'Draft']);
+
+export const triggers = pgTable("triggers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(),
+  agentId: text("agent_id").references(() => agents.id),
+  status: text("status").notNull().default('Draft'),
+  configuration: json("configuration").default({}),
+  conditions: json("conditions").default([]),
+  lastTriggeredAt: timestamp("last_triggered_at"),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const triggerEvents = pgTable("trigger_events", {
+  id: serial("id").primaryKey(),
+  triggerId: integer("trigger_id").references(() => triggers.id),
+  runId: text("run_id").references(() => runs.id),
+  status: text("status").notNull(),
+  payload: json("payload"),
+  result: json("result"),
+  errorMessage: text("error_message"),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+});
+
+export const insertTriggerSchema = createInsertSchema(triggers);
+export const updateTriggerSchema = createSelectSchema(triggers);
+export const insertTriggerEventSchema = createInsertSchema(triggerEvents);
+
+export type Trigger = typeof triggers.$inferSelect;
+export type InsertTrigger = z.infer<typeof insertTriggerSchema>;
+export type UpdateTrigger = z.infer<typeof updateTriggerSchema>;
+export type TriggerEvent = typeof triggerEvents.$inferSelect;
+export type InsertTriggerEvent = z.infer<typeof insertTriggerEventSchema>;
