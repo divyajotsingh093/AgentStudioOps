@@ -233,3 +233,42 @@ export type InsertAgentTool = z.infer<typeof insertToolSchema>;
 export type UpdateAgentTool = z.infer<typeof updateToolSchema>;
 export type ToolExecution = typeof toolExecutions.$inferSelect;
 export type InsertToolExecution = z.infer<typeof insertToolExecutionSchema>;
+
+// Document Intelligence schemas
+export const documentTypeEnum = z.enum(['Policy', 'Claim', 'Medical', 'Invoice', 'ID', 'Other']);
+export const documentStatusEnum = z.enum(['Pending', 'Processed', 'Failed', 'Analyzing']);
+
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  mimeType: text("mime_type").notNull(),
+  size: integer("size").notNull(),
+  content: text("content"),
+  uploadedBy: integer("uploaded_by").references(() => users.id),
+  associatedAgentId: text("associated_agent_id").references(() => agents.id),
+  status: text("status").notNull().default('Pending'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const documentAnalysis = pgTable("document_analysis", {
+  id: serial("id").primaryKey(),
+  documentId: integer("document_id").notNull().references(() => documents.id),
+  entities: json("entities").default([]),
+  classification: json("classification").default({}),
+  confidence: integer("confidence"),
+  summary: text("summary"),
+  analysisType: text("analysis_type").notNull(),
+  status: text("status").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDocumentSchema = createInsertSchema(documents);
+export const insertDocumentAnalysisSchema = createInsertSchema(documentAnalysis);
+
+export type Document = typeof documents.$inferSelect;
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+export type DocumentAnalysis = typeof documentAnalysis.$inferSelect;
+export type InsertDocumentAnalysis = z.infer<typeof insertDocumentAnalysisSchema>;

@@ -75,6 +75,18 @@ export interface IStorage {
   createToolExecution(execution: InsertToolExecution): Promise<ToolExecution>;
   getToolExecutionById(id: number): Promise<ToolExecution | undefined>;
   updateToolExecution(id: number, execution: Partial<Omit<ToolExecution, "id">>): Promise<ToolExecution | undefined>;
+  
+  // Document Intelligence methods
+  getDocuments(agentId?: string): Promise<Document[]>;
+  getDocumentById(id: number): Promise<Document | undefined>;
+  createDocument(document: InsertDocument): Promise<Document>;
+  updateDocument(id: number, document: Partial<Omit<Document, "id">>): Promise<Document | undefined>;
+  deleteDocument(id: number): Promise<boolean>;
+  
+  getDocumentAnalyses(documentId: number): Promise<DocumentAnalysis[]>;
+  getDocumentAnalysisById(id: number): Promise<DocumentAnalysis | undefined>;
+  createDocumentAnalysis(analysis: InsertDocumentAnalysis): Promise<DocumentAnalysis>;
+  updateDocumentAnalysis(id: number, analysis: Partial<Omit<DocumentAnalysis, "id">>): Promise<DocumentAnalysis | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -88,6 +100,8 @@ export class MemStorage implements IStorage {
   private dataPermissions: Map<number, DataPermission>;
   private agentTools: Map<number, AgentTool>;
   private toolExecutions: Map<number, ToolExecution>;
+  private documents: Map<number, Document>;
+  private documentAnalyses: Map<number, DocumentAnalysis>;
   private currentUserId: number;
   private currentIssueId: number;
   private currentComponentId: number;
@@ -96,6 +110,8 @@ export class MemStorage implements IStorage {
   private currentDataPermissionId: number;
   private currentToolId: number;
   private currentToolExecutionId: number;
+  private currentDocumentId: number;
+  private currentDocumentAnalysisId: number;
 
   constructor() {
     this.users = new Map();
@@ -108,6 +124,8 @@ export class MemStorage implements IStorage {
     this.dataPermissions = new Map();
     this.agentTools = new Map();
     this.toolExecutions = new Map();
+    this.documents = new Map();
+    this.documentAnalyses = new Map();
     this.currentUserId = 1;
     this.currentIssueId = 1;
     this.currentComponentId = 1;
@@ -116,6 +134,8 @@ export class MemStorage implements IStorage {
     this.currentDataPermissionId = 1;
     this.currentToolId = 1;
     this.currentToolExecutionId = 1;
+    this.currentDocumentId = 1;
+    this.currentDocumentAnalysisId = 1;
     
     // Initialize with mock data
     this.initializeMockData();
