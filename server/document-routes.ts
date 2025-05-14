@@ -12,8 +12,6 @@ import OpenAI from 'openai';
 import { storage } from './storage';
 import { z } from 'zod';
 import { documentStatusEnum, documentTypeEnum } from '../shared/schema';
-import { extractEntitiesFromDocument, classifyDocument as classifyDocumentAI, summarizeDocument as summarizeDocumentAI } from './openai';
-
 // Extend Request type to include session
 interface CustomRequest extends Request {
   session: session.Session & {

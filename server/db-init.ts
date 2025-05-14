@@ -1,7 +1,8 @@
 import { db } from './db';
 import { 
   users, agents, agentComponents, runs, governanceIssues, 
-  dataSources, dataConnectors, dataPermissions, agentTools, toolExecutions 
+  dataSources, dataConnectors, dataPermissions, agentTools, toolExecutions,
+  documents, documentAnalysis
 } from '@shared/schema';
 
 // Initialize the database by pushing the schema
