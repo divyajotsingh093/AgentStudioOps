@@ -1213,6 +1213,12 @@ export class DatabaseStorage implements IStorage {
   // Import trigger-related types
   private triggers = db.query.triggers;
   private triggerEvents = db.query.triggerEvents;
+  // Import Agent Orchestration Canvas types
+  private flows = db.query.flows;
+  private flowNodes = db.query.flowNodes;
+  private flowEdges = db.query.flowEdges;
+  private flowExecutions = db.query.flowExecutions;
+  private nodeExecutions = db.query.nodeExecutions;
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -1672,6 +1678,284 @@ export class DatabaseStorage implements IStorage {
       .where(eq(triggerEvents.id, id))
       .returning();
     return updatedEvent || undefined;
+  }
+
+  // Agent Orchestration Canvas methods
+  async getFlows(): Promise<Flow[]> {
+    return await db.select().from(flows);
+  }
+  
+  async getFlowById(id: number): Promise<Flow | undefined> {
+    const [flow] = await db.select().from(flows).where(eq(flows.id, id));
+    
+    if (!flow) return undefined;
+    
+    // Get nodes for this flow
+    const flowNodesResult = await this.getFlowNodes(id);
+    
+    // Get edges for this flow
+    const flowEdgesResult = await this.getFlowEdges(id);
+    
+    return {
+      ...flow,
+      nodes: flowNodesResult.map(node => ({
+        id: String(node.id),
+        type: node.type,
+        position: node.position as { x: number, y: number },
+        data: {
+          label: node.name,
+          description: node.config?.description || "",
+          ...node.config
+        }
+      })),
+      edges: flowEdgesResult.map(edge => ({
+        id: String(edge.id),
+        source: String(edge.sourceId),
+        target: String(edge.targetId),
+        type: edge.type,
+        data: {
+          label: edge.label || ""
+        }
+      }))
+    };
+  }
+  
+  async createFlow(flow: InsertFlow): Promise<Flow> {
+    const [newFlow] = await db.insert(flows).values(flow).returning();
+    return newFlow;
+  }
+  
+  async updateFlow(id: number, flowUpdate: UpdateFlow): Promise<Flow | undefined> {
+    // If nodes and edges are provided in the update, handle them separately
+    const { nodes, edges, ...flowData } = flowUpdate as any;
+    
+    // Update the flow metadata
+    const [updatedFlow] = await db
+      .update(flows)
+      .set({ 
+        ...flowData, 
+        updatedAt: new Date() 
+      })
+      .where(eq(flows.id, id))
+      .returning();
+    
+    if (!updatedFlow) return undefined;
+    
+    // If nodes were provided, update them
+    if (nodes && Array.isArray(nodes)) {
+      // First, get existing nodes
+      const existingNodes = await this.getFlowNodes(id);
+      
+      // Process each node from the request
+      for (const node of nodes) {
+        const nodeId = Number(node.id.replace('node-', ''));
+        const existingNode = existingNodes.find(n => n.id === nodeId);
+        
+        if (existingNode) {
+          // Update existing node
+          await this.updateFlowNode(nodeId, {
+            name: node.data.label,
+            type: node.type,
+            position: node.position,
+            config: node.data
+          });
+        } else {
+          // Create new node
+          await this.createFlowNode({
+            flowId: id,
+            name: node.data.label,
+            type: node.type,
+            position: node.position,
+            config: node.data,
+            referenceId: null,
+            referenceType: null
+          });
+        }
+      }
+      
+      // Find nodes that were deleted and remove them
+      const updatedNodeIds = nodes.map(n => Number(n.id.replace('node-', '')));
+      for (const existingNode of existingNodes) {
+        if (!updatedNodeIds.includes(existingNode.id)) {
+          await this.deleteFlowNode(existingNode.id);
+        }
+      }
+    }
+    
+    // If edges were provided, update them
+    if (edges && Array.isArray(edges)) {
+      // First, get existing edges
+      const existingEdges = await this.getFlowEdges(id);
+      
+      // Process each edge from the request
+      for (const edge of edges) {
+        const edgeId = Number(edge.id.replace('edge-', ''));
+        const existingEdge = existingEdges.find(e => e.id === edgeId);
+        
+        if (existingEdge) {
+          // Update existing edge
+          await this.updateFlowEdge(edgeId, {
+            sourceId: Number(edge.source),
+            targetId: Number(edge.target),
+            type: edge.type || 'default',
+            label: edge.data?.label || null,
+            condition: edge.data || {}
+          });
+        } else {
+          // Create new edge
+          await this.createFlowEdge({
+            flowId: id,
+            sourceId: Number(edge.source),
+            targetId: Number(edge.target),
+            type: edge.type || 'default',
+            label: edge.data?.label || null,
+            condition: edge.data || {}
+          });
+        }
+      }
+      
+      // Find edges that were deleted and remove them
+      const updatedEdgeIds = edges.map(e => Number(e.id.replace('edge-', '')));
+      for (const existingEdge of existingEdges) {
+        if (!updatedEdgeIds.includes(existingEdge.id)) {
+          await this.deleteFlowEdge(existingEdge.id);
+        }
+      }
+    }
+    
+    // Return the full updated flow with nodes and edges
+    return this.getFlowById(id);
+  }
+  
+  async deleteFlow(id: number): Promise<boolean> {
+    // First delete all nodes and edges
+    const nodes = await this.getFlowNodes(id);
+    for (const node of nodes) {
+      await this.deleteFlowNode(node.id);
+    }
+    
+    const edges = await this.getFlowEdges(id);
+    for (const edge of edges) {
+      await this.deleteFlowEdge(edge.id);
+    }
+    
+    // Then delete the flow
+    await db.delete(flows).where(eq(flows.id, id));
+    return true;
+  }
+  
+  // Flow Node methods
+  async getFlowNodes(flowId: number): Promise<FlowNode[]> {
+    return await db.select().from(flowNodes).where(eq(flowNodes.flowId, flowId));
+  }
+  
+  async getFlowNodeById(id: number): Promise<FlowNode | undefined> {
+    const [node] = await db.select().from(flowNodes).where(eq(flowNodes.id, id));
+    return node || undefined;
+  }
+  
+  async createFlowNode(node: InsertFlowNode): Promise<FlowNode> {
+    const [newNode] = await db.insert(flowNodes).values(node).returning();
+    return newNode;
+  }
+  
+  async updateFlowNode(id: number, node: UpdateFlowNode): Promise<FlowNode | undefined> {
+    const [updatedNode] = await db
+      .update(flowNodes)
+      .set({ ...node, updatedAt: new Date() })
+      .where(eq(flowNodes.id, id))
+      .returning();
+    return updatedNode || undefined;
+  }
+  
+  async deleteFlowNode(id: number): Promise<boolean> {
+    // First delete any edges connected to this node
+    await db.delete(flowEdges).where(eq(flowEdges.sourceId, id));
+    await db.delete(flowEdges).where(eq(flowEdges.targetId, id));
+    
+    // Then delete the node
+    await db.delete(flowNodes).where(eq(flowNodes.id, id));
+    return true;
+  }
+  
+  // Flow Edge methods
+  async getFlowEdges(flowId: number): Promise<FlowEdge[]> {
+    return await db.select().from(flowEdges).where(eq(flowEdges.flowId, flowId));
+  }
+  
+  async getFlowEdgeById(id: number): Promise<FlowEdge | undefined> {
+    const [edge] = await db.select().from(flowEdges).where(eq(flowEdges.id, id));
+    return edge || undefined;
+  }
+  
+  async createFlowEdge(edge: InsertFlowEdge): Promise<FlowEdge> {
+    const [newEdge] = await db.insert(flowEdges).values(edge).returning();
+    return newEdge;
+  }
+  
+  async updateFlowEdge(id: number, edge: UpdateFlowEdge): Promise<FlowEdge | undefined> {
+    const [updatedEdge] = await db
+      .update(flowEdges)
+      .set({ ...edge, updatedAt: new Date() })
+      .where(eq(flowEdges.id, id))
+      .returning();
+    return updatedEdge || undefined;
+  }
+  
+  async deleteFlowEdge(id: number): Promise<boolean> {
+    await db.delete(flowEdges).where(eq(flowEdges.id, id));
+    return true;
+  }
+  
+  // Flow Execution methods
+  async getFlowExecutions(flowId?: number): Promise<FlowExecution[]> {
+    if (flowId) {
+      return await db.select().from(flowExecutions).where(eq(flowExecutions.flowId, flowId));
+    }
+    return await db.select().from(flowExecutions);
+  }
+  
+  async getFlowExecutionById(id: string): Promise<FlowExecution | undefined> {
+    const [execution] = await db.select().from(flowExecutions).where(eq(flowExecutions.id, id));
+    return execution || undefined;
+  }
+  
+  async createFlowExecution(execution: InsertFlowExecution): Promise<FlowExecution> {
+    const [newExecution] = await db.insert(flowExecutions).values(execution).returning();
+    return newExecution;
+  }
+  
+  async updateFlowExecution(id: string, execution: Partial<Omit<FlowExecution, "id">>): Promise<FlowExecution | undefined> {
+    const [updatedExecution] = await db
+      .update(flowExecutions)
+      .set(execution)
+      .where(eq(flowExecutions.id, id))
+      .returning();
+    return updatedExecution || undefined;
+  }
+  
+  // Node Execution methods
+  async getNodeExecutions(flowExecutionId: string): Promise<NodeExecution[]> {
+    return await db.select().from(nodeExecutions).where(eq(nodeExecutions.flowExecutionId, flowExecutionId));
+  }
+  
+  async getNodeExecutionById(id: string): Promise<NodeExecution | undefined> {
+    const [execution] = await db.select().from(nodeExecutions).where(eq(nodeExecutions.id, id));
+    return execution || undefined;
+  }
+  
+  async createNodeExecution(execution: InsertNodeExecution): Promise<NodeExecution> {
+    const [newExecution] = await db.insert(nodeExecutions).values(execution).returning();
+    return newExecution;
+  }
+  
+  async updateNodeExecution(id: string, execution: Partial<Omit<NodeExecution, "id">>): Promise<NodeExecution | undefined> {
+    const [updatedExecution] = await db
+      .update(nodeExecutions)
+      .set(execution)
+      .where(eq(nodeExecutions.id, id))
+      .returning();
+    return updatedExecution || undefined;
   }
 }
 
