@@ -639,38 +639,37 @@ export function TriggerForm({ triggerId, defaultValues }: TriggerFormProps) {
                     )}
                   />
 
-                <FormField
-                  control={form.control}
-                  name="action"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Action (JSON)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder={'{\n  "action": "invoke_agent",\n  "parameters": {\n    "input_data": "$event.data"\n  }\n}'}
-                          className="font-mono"
-                          rows={8}
-                          {...field}
-                          value={typeof field.value === 'object' ? JSON.stringify(field.value, null, 2) : field.value || ''}
-                          onChange={(e) => {
-                            try {
-                              // Try to parse as JSON if possible
-                              const parsed = JSON.parse(e.target.value);
-                              field.onChange(parsed);
-                            } catch {
-                              // Otherwise store as string
-                              field.onChange(e.target.value);
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        JSON definition of the action to perform when triggered
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <Separator className="my-6" />
+                
+                <div className="pb-2">
+                  <h3 className="text-lg font-medium flex items-center mb-2">
+                    <PlayCircle className="w-5 h-5 mr-2 text-indigo-500" />
+                    Trigger Actions
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Configure the actions to be performed when this trigger is activated.
+                  </p>
+                
+                  <FormField
+                    control={form.control}
+                    name="action"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <ActionBuilder
+                            value={field.value as ActionConfig || {
+                              type: '',
+                              target: { id: '' },
+                              parameters: {}
+                            }}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>
