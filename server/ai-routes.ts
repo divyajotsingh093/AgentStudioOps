@@ -50,14 +50,13 @@ router.post('/analyze-risk', async (req: Request, res: Response) => {
     // Create a run record
     await storage.createRun({
       id: runId,
-      agentId: req.body.agentId || null,
+      agentId: req.body.agentId || "risk-assessment-agent",
+      agentName: "Risk Assessment Agent",
+      agentIcon: "shield",
       status: 'Running',
-      type: 'RiskAnalysis',
-      input: JSON.stringify(policyData),
-      startTime: new Date(),
-      endTime: null,
-      metrics: {},
-      userId: req.body.userId || null
+      steps: JSON.stringify(policyData),
+      latency: 0,
+      cost: 0
     });
     
     const analysisResult = await analyzeRisk(policyData);
@@ -86,14 +85,13 @@ router.post('/analyze-claim', async (req: Request, res: Response) => {
     // Create a run record
     await storage.createRun({
       id: runId,
-      agentId: req.body.agentId || null,
+      agentId: req.body.agentId || "claim-analysis-agent",
+      agentName: "Claim Analysis Agent",
+      agentIcon: "document-check",
       status: 'Running',
-      type: 'ClaimAnalysis',
-      input: JSON.stringify(claimData),
-      startTime: new Date(),
-      endTime: null,
-      metrics: {},
-      userId: req.body.userId || null
+      steps: JSON.stringify(claimData),
+      latency: 0,
+      cost: 0
     });
     
     const analysisResult = await analyzeClaim(claimData);
@@ -160,17 +158,17 @@ router.post('/generate-component', async (req: Request, res: Response) => {
     
     const runId = uuidv4();
     
-    // Create a run record
+    // Create a run record with agent details
+    
     await storage.createRun({
       id: runId,
       agentId: agentId,
+      agentName: agent?.name || "Component Generator",
+      agentIcon: "robot",
       status: 'Running',
-      type: 'ComponentGeneration',
-      input: JSON.stringify({ componentType, description, context }),
-      startTime: new Date(),
-      endTime: null,
-      metrics: {},
-      userId: req.body.userId || null
+      steps: JSON.stringify({ componentType, description, context }),
+      latency: 0,
+      cost: 0
     });
     
     const component = await generateAgentComponent(
@@ -187,10 +185,7 @@ router.post('/generate-component', async (req: Request, res: Response) => {
       name: component.name,
       description: description,
       configuration: component.configuration,
-      code: component.code,
-      status: 'Draft',
-      createdAt: new Date(),
-      updatedAt: new Date()
+      content: component.code
     });
     
     // Update run status
