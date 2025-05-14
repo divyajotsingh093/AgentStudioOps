@@ -16,6 +16,9 @@ export function ResponsiveDataGrid<T>({
   minWidth = 250,
   gap = 4,
 }: ResponsiveDataGridProps<T>) {
+  // Add a safety check for items being undefined or null
+  const safeItems = items || [];
+  
   return (
     <div
       className={cn(
@@ -28,9 +31,15 @@ export function ResponsiveDataGrid<T>({
         gap: `${gap * 0.25}rem`,
       }}
     >
-      {items.map((item, index) => (
-        <React.Fragment key={index}>{renderItem(item)}</React.Fragment>
-      ))}
+      {safeItems.length === 0 ? (
+        <div className="col-span-full py-8 text-center text-gray-500 dark:text-gray-400">
+          No items to display
+        </div>
+      ) : (
+        safeItems.map((item, index) => (
+          <React.Fragment key={index}>{renderItem(item)}</React.Fragment>
+        ))
+      )}
     </div>
   );
 }

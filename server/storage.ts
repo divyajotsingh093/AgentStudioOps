@@ -436,6 +436,10 @@ export class MemStorage implements IStorage {
       updatedAt: new Date(),
       status: tool.status || 'Active',
       version: tool.version || '1.0.0',
+      description: tool.description || null,
+      endpoint: tool.endpoint || null,
+      createdBy: tool.createdBy || null,
+      authType: tool.authType || 'None',
       authConfig: tool.authConfig || {},
       parameters: tool.parameters || [],
       responseSchema: tool.responseSchema || {},
@@ -482,7 +486,15 @@ export class MemStorage implements IStorage {
     const newExecution: ToolExecution = {
       ...execution,
       id,
-      timestamp: new Date()
+      timestamp: new Date(),
+      status: execution.status || 'Completed',
+      agentId: execution.agentId || null,
+      latency: execution.latency || null,
+      runId: execution.runId || null,
+      toolId: execution.toolId || null,
+      requestPayload: execution.requestPayload || null,
+      responsePayload: execution.responsePayload || null,
+      errorMessage: execution.errorMessage || null
     };
     this.toolExecutions.set(id, newExecution);
     return newExecution;
