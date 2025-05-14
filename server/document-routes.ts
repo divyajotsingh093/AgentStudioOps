@@ -1,12 +1,13 @@
-import express, { Request, Response, Router } from 'express';
+import express, { Response, Router } from 'express';
 import multer from 'multer';
+import { Request } from 'express-serve-static-core';
 import { FileTypeResult, fileTypeFromBuffer } from 'file-type';
 import fs from 'fs';
 import util from 'util';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import OpenAI from 'openai';
-import pdf from 'pdf-parse';
+// We'll use dynamic import for pdf-parse to avoid initialization issues
 import { storage } from './storage';
 import { z } from 'zod';
 import { documentStatusEnum, documentTypeEnum } from '../shared/schema';
@@ -257,8 +258,15 @@ function isPermittedFileType(mimeType: string): boolean {
 async function extractTextFromFile(buffer: Buffer, mimeType: string): Promise<string> {
   // Handle PDFs
   if (mimeType === 'application/pdf') {
-    const data = await pdf(buffer);
-    return data.text;
+    try {
+      // Dynamically import pdf-parse to avoid initialization issues
+      const pdfParse = await import('pdf-parse').then(module => module.default);
+      const data = await pdfParse(buffer);
+      return data.text;
+    } catch (error) {
+      console.error('Error parsing PDF:', error);
+      return ''; // Return empty string if PDF parsing fails
+    }
   }
   
   // Handle text files
@@ -268,32 +276,37 @@ async function extractTextFromFile(buffer: Buffer, mimeType: string): Promise<st
   
   // For all other types, use OpenAI to extract text
   if (process.env.OPENAI_API_KEY) {
-    // Convert buffer to base64
-    const base64Image = buffer.toString('base64');
-    
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Extract all the text content from this document/image. Return just the text without any additional comments."
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${mimeType};base64,${base64Image}`
+    try {
+      // Convert buffer to base64
+      const base64Image = buffer.toString('base64');
+      
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Extract all the text content from this document/image. Return just the text without any additional comments."
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Image}`
+                }
               }
-            }
-          ],
-        },
-      ],
-      max_tokens: 4000,
-    });
-    
-    return response.choices[0].message.content || '';
+            ],
+          },
+        ],
+        max_tokens: 4000,
+      });
+      
+      return response.choices[0].message.content || '';
+    } catch (error) {
+      console.error('Error using OpenAI to extract text:', error);
+      return ''; // Return empty string if OpenAI processing fails
+    }
   }
   
   return ''; // Return empty string if no extraction method available

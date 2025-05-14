@@ -13,6 +13,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import aiRoutes from './ai-routes';
+import documentRoutes from './document-routes';
 
 // Collaborative editing types
 interface CollaborationSession {
@@ -68,6 +69,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register AI routes
   app.use('/api/ai', aiRoutes);
+  
+  // Register Document routes
+  app.use('/api/documents', documentRoutes);
   
   // Agents API
   app.get("/api/agents", async (req, res) => {

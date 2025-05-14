@@ -8,7 +8,9 @@ import {
   dataConnectors, type DataConnector, type InsertDataConnector, type UpdateDataConnector,
   dataPermissions, type DataPermission, type InsertDataPermission,
   agentTools, type AgentTool, type InsertAgentTool, type UpdateAgentTool,
-  toolExecutions, type ToolExecution, type InsertToolExecution
+  toolExecutions, type ToolExecution, type InsertToolExecution,
+  documents, type Document, type InsertDocument,
+  documentAnalysis, type DocumentAnalysis, type InsertDocumentAnalysis
 } from "@shared/schema";
 import { db } from './db';
 import { eq } from 'drizzle-orm';
