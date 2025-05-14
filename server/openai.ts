@@ -348,3 +348,171 @@ export async function generateAgentComponent(
     throw new Error(`Failed to generate component: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
+
+/**
+ * Extract entities from a document
+ */
+export async function extractEntitiesFromDocument(
+  documentContent: string,
+  documentType: string
+): Promise<{
+  entities: Array<{
+    type: string;
+    value: string;
+    confidence: number;
+  }>;
+}> {
+  try {
+    const systemPrompt = `
+      You are a document analysis expert specialized in insurance documents.
+      Extract key entities from this ${documentType} document. Focus on specific information like:
+      - Policy numbers
+      - Claim numbers
+      - Names (policyholders, claimants, etc.)
+      - Dates (issuance, expiration, claim date, etc.)
+      - Monetary amounts (premiums, coverage limits, claim amounts)
+      - Addresses and locations
+      - Contact information
+      - Vehicle information (if applicable)
+      - Property details (if applicable)
+      
+      For each entity, provide:
+      1. The entity type (e.g., "PolicyNumber", "Claimant", "ExpirationDate")
+      2. The exact value found in the text
+      3. A confidence score between 0 and 1 indicating how certain you are about this extraction
+    `;
+    
+    const response = await openai.chat.completions.create({
+      model: DEFAULT_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: documentContent }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2
+    });
+    
+    const content = response.choices[0].message.content || "{}";
+    const parsed = JSON.parse(content);
+    
+    // Ensure we have the expected structure
+    return {
+      entities: Array.isArray(parsed.entities) ? parsed.entities : []
+    };
+  } catch (error) {
+    console.error("Error extracting entities:", error);
+    throw new Error(`Failed to extract entities: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}
+
+/**
+ * Classify a document
+ */
+export async function classifyDocument(
+  documentContent: string
+): Promise<{
+  classification: {
+    category: string;
+    intent: string;
+    documentType: string;
+  };
+  confidence: number;
+}> {
+  try {
+    const systemPrompt = `
+      You are a document analysis expert specialized in insurance documents.
+      Classify this insurance document based on:
+      
+      1. Document Category:
+         - Policy document
+         - Claim form
+         - Medical record
+         - Invoice
+         - Correspondence
+         - Legal document
+         - Identification document
+         - Other (specify)
+      
+      2. Document Intent:
+         - New application
+         - Renewal
+         - Claim submission
+         - Information request
+         - Policy change
+         - Cancellation
+         - Other (specify)
+      
+      3. Specific Document Type:
+         - Be as specific as possible (e.g., "Auto Insurance Policy", "Health Insurance Claim Form")
+      
+      Also provide an overall confidence score (0-1) for your classification.
+    `;
+    
+    const response = await openai.chat.completions.create({
+      model: DEFAULT_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: documentContent }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2
+    });
+    
+    const content = response.choices[0].message.content || "{}";
+    const parsed = JSON.parse(content);
+    
+    // Ensure we have the expected structure
+    return {
+      classification: {
+        category: parsed.classification?.category || "Unknown",
+        intent: parsed.classification?.intent || "Unknown",
+        documentType: parsed.classification?.documentType || "Unknown"
+      },
+      confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0
+    };
+  } catch (error) {
+    console.error("Error classifying document:", error);
+    throw new Error(`Failed to classify document: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}
+
+/**
+ * Generate a summary of a document
+ */
+export async function summarizeDocument(
+  documentContent: string
+): Promise<{
+  summary: string;
+}> {
+  try {
+    const systemPrompt = `
+      You are a document summarization expert specialized in insurance documents.
+      Create a concise summary of the following insurance document, highlighting:
+      
+      - Key information
+      - Important dates
+      - Key actions or next steps
+      - Critical financial information
+      
+      Keep the summary focused on the most important information an insurance agent would need.
+      The summary should be under 300 words.
+    `;
+    
+    const response = await openai.chat.completions.create({
+      model: DEFAULT_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: documentContent }
+      ],
+      temperature: 0.3,
+      max_tokens: 500
+    });
+    
+    return { 
+      summary: response.choices[0].message.content || "" 
+    };
+  } catch (error) {
+    console.error("Error summarizing document:", error);
+    throw new Error(`Failed to summarize document: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
+}

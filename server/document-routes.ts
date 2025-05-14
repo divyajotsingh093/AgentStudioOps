@@ -2,13 +2,6 @@ import express, { Response, Router } from 'express';
 import multer from 'multer';
 import { Request } from 'express-serve-static-core';
 import session from 'express-session';
-
-// Extend Request type to include session
-interface CustomRequest extends Request {
-  session: session.Session & {
-    userId?: number | null;
-  };
-}
 import { FileTypeResult, fileTypeFromBuffer } from 'file-type';
 import fs from 'fs';
 import util from 'util';
@@ -19,6 +12,14 @@ import OpenAI from 'openai';
 import { storage } from './storage';
 import { z } from 'zod';
 import { documentStatusEnum, documentTypeEnum } from '../shared/schema';
+import { extractEntitiesFromDocument, classifyDocument as classifyDocumentAI, summarizeDocument as summarizeDocumentAI } from './openai';
+
+// Extend Request type to include session
+interface CustomRequest extends Request {
+  session: session.Session & {
+    userId?: number | null;
+  };
+}
 
 // Configure multer for in-memory storage
 const upload = multer({ 
@@ -320,104 +321,39 @@ async function extractTextFromFile(buffer: Buffer, mimeType: string): Promise<st
   return ''; // Return empty string if no extraction method available
 }
 
+import { extractEntitiesFromDocument, classifyDocument as classifyDocumentAI, summarizeDocument as summarizeDocumentAI } from './openai';
+
 async function extractEntities(text: string, documentType: string): Promise<{ entities: any[] }> {
-  const systemPrompt = `Extract key entities from this ${documentType} document. Focus on specific information like:
-  - Policy numbers
-  - Claim numbers
-  - Names of individuals
-  - Dates
-  - Monetary amounts
-  - Addresses
-  - Contact information
-  - Vehicle information (if applicable)
-  - Property details (if applicable)
-  
-  Return the data as a JSON array where each entity has a "type", "value", and "confidence" (a number between 0-1) property.`;
-  
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: text }
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.2,
-  });
-  
-  const content = response.choices[0].message.content;
   try {
-    const parsedContent = JSON.parse(content || '{}');
-    return { entities: parsedContent.entities || [] };
+    const result = await extractEntitiesFromDocument(text, documentType);
+    return result;
   } catch (error) {
-    console.error('Error parsing entity extraction response:', error);
+    console.error('Error in entity extraction:', error);
     return { entities: [] };
   }
 }
 
 async function classifyDocument(text: string): Promise<{ classification: any, confidence: number }> {
-  const systemPrompt = `Classify this insurance document into one of the following categories:
-  - Policy
-  - Claim
-  - Medical Report
-  - Invoice
-  - Legal Document
-  - Correspondence
-  - Other
-  
-  Also determine the intent of the document (e.g., new application, renewal, claim submission, information request).
-  
-  Return the result as a JSON object with "category", "intent", and "confidence" (a number between 0-1) properties.`;
-  
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: text }
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.2,
-  });
-  
-  const content = response.choices[0].message.content;
   try {
-    const parsedContent = JSON.parse(content || '{}');
-    const confidence = typeof parsedContent.confidence === 'number' ? 
-      Math.floor(parsedContent.confidence * 100) : 0;
-    
-    delete parsedContent.confidence;
-    return { 
-      classification: parsedContent, 
-      confidence
-    };
+    const result = await classifyDocumentAI(text);
+    return result;
   } catch (error) {
-    console.error('Error parsing classification response:', error);
+    console.error('Error in document classification:', error);
     return { 
-      classification: { category: 'Unknown', intent: 'Unknown' }, 
+      classification: { category: 'Unknown', intent: 'Unknown', documentType: 'Unknown' }, 
       confidence: 0 
     };
   }
 }
 
 async function summarizeDocument(text: string): Promise<{ summary: string }> {
-  const systemPrompt = `Provide a concise summary of this insurance document, highlighting:
-  - Key information
-  - Important dates
-  - Key actions or next steps
-  - Critical financial information
-  
-  Keep the summary under 300 words and focus on the most important information an insurance agent would need.`;
-  
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: text }
-    ],
-    temperature: 0.3,
-    max_tokens: 500,
-  });
-  
-  return { summary: response.choices[0].message.content || '' };
+  try {
+    const result = await summarizeDocumentAI(text);
+    return result;
+  } catch (error) {
+    console.error('Error in document summarization:', error);
+    return { summary: 'Failed to generate summary due to an error.' };
+  }
 }
 
 export default router;
