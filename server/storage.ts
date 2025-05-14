@@ -178,6 +178,399 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  // Agent Orchestration Canvas methods
+  async getFlows(): Promise<Flow[]> {
+    return [];
+  }
+  
+  async getFlowById(id: number): Promise<Flow | undefined> {
+    return undefined;
+  }
+  
+  async createFlow(flow: InsertFlow): Promise<Flow> {
+    return { 
+      id: 1, 
+      name: flow.name, 
+      description: flow.description || null, 
+      status: flow.status || 'Draft',
+      version: flow.version || '1.0.0',
+      tags: flow.tags || null,
+      createdBy: flow.createdBy || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      metadata: flow.metadata || {} 
+    };
+  }
+  
+  async updateFlow(id: number, flow: UpdateFlow): Promise<Flow | undefined> {
+    return { 
+      id, 
+      name: flow.name || 'Updated Flow', 
+      description: flow.description || null, 
+      status: flow.status || 'Draft',
+      version: flow.version || '1.0.0',
+      tags: flow.tags || null,
+      createdBy: flow.createdBy || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      metadata: flow.metadata || {} 
+    };
+  }
+  
+  async deleteFlow(id: number): Promise<boolean> {
+    return true;
+  }
+  
+  async getFlowNodes(flowId: number): Promise<FlowNode[]> {
+    return [];
+  }
+  
+  async getFlowNodeById(id: number): Promise<FlowNode | undefined> {
+    return undefined;
+  }
+  
+  async createFlowNode(node: InsertFlowNode): Promise<FlowNode> {
+    return {
+      id: 1,
+      flowId: node.flowId,
+      type: node.type,
+      name: node.name,
+      position: node.position,
+      config: node.config || {},
+      referenceId: node.referenceId || null,
+      referenceType: node.referenceType || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async updateFlowNode(id: number, node: UpdateFlowNode): Promise<FlowNode | undefined> {
+    return {
+      id,
+      flowId: 1,
+      type: node.type || 'default',
+      name: node.name || 'Updated Node',
+      position: node.position || { x: 0, y: 0 },
+      config: node.config || {},
+      referenceId: node.referenceId || null,
+      referenceType: node.referenceType || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async deleteFlowNode(id: number): Promise<boolean> {
+    return true;
+  }
+  
+  async getFlowEdges(flowId: number): Promise<FlowEdge[]> {
+    return [];
+  }
+  
+  async getFlowEdgeById(id: number): Promise<FlowEdge | undefined> {
+    return undefined;
+  }
+  
+  async createFlowEdge(edge: InsertFlowEdge): Promise<FlowEdge> {
+    return {
+      id: 1,
+      flowId: edge.flowId,
+      sourceId: edge.sourceId,
+      targetId: edge.targetId,
+      type: edge.type || 'default',
+      label: edge.label || null,
+      condition: edge.condition || {},
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async updateFlowEdge(id: number, edge: UpdateFlowEdge): Promise<FlowEdge | undefined> {
+    return {
+      id,
+      flowId: 1,
+      sourceId: edge.sourceId || 1,
+      targetId: edge.targetId || 2,
+      type: edge.type || 'default',
+      label: edge.label || null,
+      condition: edge.condition || {},
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async deleteFlowEdge(id: number): Promise<boolean> {
+    return true;
+  }
+  
+  async getFlowExecutions(flowId?: number): Promise<FlowExecution[]> {
+    return [];
+  }
+  
+  async getFlowExecutionById(id: string): Promise<FlowExecution | undefined> {
+    return undefined;
+  }
+  
+  async createFlowExecution(execution: InsertFlowExecution): Promise<FlowExecution> {
+    return {
+      id: execution.id || 'exec-1',
+      flowId: execution.flowId,
+      status: execution.status,
+      input: execution.input || {},
+      output: {},
+      startedAt: execution.startedAt || new Date(),
+      completedAt: null,
+      createdBy: execution.createdBy || null,
+      error: null,
+      totalTime: null,
+      metadata: {}
+    };
+  }
+  
+  async updateFlowExecution(id: string, execution: Partial<Omit<FlowExecution, "id">>): Promise<FlowExecution | undefined> {
+    return {
+      id,
+      flowId: 1,
+      status: execution.status || 'Running',
+      input: execution.input || {},
+      output: execution.output || {},
+      startedAt: execution.startedAt || new Date(),
+      completedAt: execution.completedAt || null,
+      createdBy: execution.createdBy || null,
+      error: execution.error || null,
+      totalTime: execution.totalTime || null,
+      metadata: execution.metadata || {}
+    };
+  }
+  
+  async getNodeExecutions(flowExecutionId: string): Promise<NodeExecution[]> {
+    return [];
+  }
+  
+  async getNodeExecutionById(id: string): Promise<NodeExecution | undefined> {
+    return undefined;
+  }
+  
+  async createNodeExecution(execution: InsertNodeExecution): Promise<NodeExecution> {
+    return {
+      id: execution.id || 'node-exec-1',
+      flowExecutionId: execution.flowExecutionId,
+      nodeId: execution.nodeId,
+      status: execution.status,
+      input: execution.input || {},
+      output: execution.output || {},
+      startedAt: execution.startedAt || new Date(),
+      completedAt: null,
+      error: null,
+      duration: null
+    };
+  }
+  
+  async updateNodeExecution(id: string, execution: Partial<Omit<NodeExecution, "id">>): Promise<NodeExecution | undefined> {
+    return {
+      id,
+      flowExecutionId: 'exec-1',
+      nodeId: 1,
+      status: execution.status || 'Running',
+      input: execution.input || {},
+      output: execution.output || {},
+      startedAt: execution.startedAt || new Date(),
+      completedAt: execution.completedAt || null,
+      error: execution.error || null,
+      duration: execution.duration || null
+    };
+  }
+  
+  // Data Fabric Explorer methods
+  async getDataDomains(parentId?: number): Promise<DataDomain[]> {
+    return [];
+  }
+  
+  async getDataDomainById(id: number): Promise<DataDomain | undefined> {
+    return undefined;
+  }
+  
+  async createDataDomain(domain: InsertDataDomain): Promise<DataDomain> {
+    return {
+      id: 1,
+      name: domain.name,
+      description: domain.description || null,
+      owner: domain.owner || null,
+      parentId: domain.parentId || null,
+      metadata: domain.metadata || {},
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async updateDataDomain(id: number, domain: UpdateDataDomain): Promise<DataDomain | undefined> {
+    return {
+      id,
+      name: domain.name || 'Updated Domain',
+      description: domain.description || null,
+      owner: domain.owner || null,
+      parentId: domain.parentId || null,
+      metadata: domain.metadata || {},
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async deleteDataDomain(id: number): Promise<boolean> {
+    return true;
+  }
+  
+  async getDataEntities(domainId?: number): Promise<DataEntity[]> {
+    return [];
+  }
+  
+  async getDataEntityById(id: number): Promise<DataEntity | undefined> {
+    return undefined;
+  }
+  
+  async createDataEntity(entity: InsertDataEntity): Promise<DataEntity> {
+    return {
+      id: 1,
+      name: entity.name,
+      domainId: entity.domainId || null,
+      sourceId: entity.sourceId || null,
+      entityType: entity.entityType,
+      schema: entity.schema,
+      description: entity.description || null,
+      tags: entity.tags || null,
+      metadata: entity.metadata || {},
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async updateDataEntity(id: number, entity: UpdateDataEntity): Promise<DataEntity | undefined> {
+    return {
+      id,
+      name: entity.name || 'Updated Entity',
+      domainId: entity.domainId || null,
+      sourceId: entity.sourceId || null,
+      entityType: entity.entityType || 'Table',
+      schema: entity.schema || {},
+      description: entity.description || null,
+      tags: entity.tags || null,
+      metadata: entity.metadata || {},
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async deleteDataEntity(id: number): Promise<boolean> {
+    return true;
+  }
+  
+  async getDataRelationships(sourceEntityId?: number): Promise<DataRelationship[]> {
+    return [];
+  }
+  
+  async getDataRelationshipById(id: number): Promise<DataRelationship | undefined> {
+    return undefined;
+  }
+  
+  async createDataRelationship(relationship: InsertDataRelationship): Promise<DataRelationship> {
+    return {
+      id: 1,
+      name: relationship.name,
+      sourceEntityId: relationship.sourceEntityId,
+      targetEntityId: relationship.targetEntityId,
+      relationshipType: relationship.relationshipType,
+      sourceField: relationship.sourceField,
+      targetField: relationship.targetField,
+      description: relationship.description || null,
+      metadata: relationship.metadata || {},
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async updateDataRelationship(id: number, relationship: UpdateDataRelationship): Promise<DataRelationship | undefined> {
+    return {
+      id,
+      name: relationship.name || 'Updated Relationship',
+      sourceEntityId: relationship.sourceEntityId || 1,
+      targetEntityId: relationship.targetEntityId || 2,
+      relationshipType: relationship.relationshipType || 'one-to-many',
+      sourceField: relationship.sourceField || 'id',
+      targetField: relationship.targetField || 'foreignId',
+      description: relationship.description || null,
+      metadata: relationship.metadata || {},
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async deleteDataRelationship(id: number): Promise<boolean> {
+    return true;
+  }
+  
+  async getDataLineage(entityId?: number): Promise<DataLineage[]> {
+    return [];
+  }
+  
+  async createDataLineage(lineage: InsertDataLineage): Promise<DataLineage> {
+    return {
+      id: 1,
+      entityId: lineage.entityId,
+      processId: lineage.processId || null,
+      processType: lineage.processType,
+      operation: lineage.operation,
+      timestamp: lineage.timestamp || new Date(),
+      metadata: lineage.metadata || {}
+    };
+  }
+  
+  async getDataQueries(): Promise<DataQuery[]> {
+    return [];
+  }
+  
+  async getDataQueryById(id: number): Promise<DataQuery | undefined> {
+    return undefined;
+  }
+  
+  async createDataQuery(query: InsertDataQuery): Promise<DataQuery> {
+    return {
+      id: 1,
+      name: query.name,
+      description: query.description || null,
+      queryText: query.queryText,
+      savedBy: query.savedBy || null,
+      resultSchema: query.resultSchema || {},
+      tags: query.tags || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastExecuted: null,
+      isPublic: query.isPublic || false
+    };
+  }
+  
+  async updateDataQuery(id: number, query: UpdateDataQuery): Promise<DataQuery | undefined> {
+    return {
+      id,
+      name: query.name || 'Updated Query',
+      description: query.description || null,
+      queryText: query.queryText || 'SELECT * FROM data',
+      savedBy: query.savedBy || null,
+      resultSchema: query.resultSchema || {},
+      tags: query.tags || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastExecuted: query.lastExecuted || null,
+      isPublic: query.isPublic || false
+    };
+  }
+  
+  async deleteDataQuery(id: number): Promise<boolean> {
+    return true;
+  }
+  
+  async executeDataQuery(id: number): Promise<any> {
+    return { rows: [], columns: [] };
+  }
   private users: Map<number, User>;
   private agents: Map<string, Agent>;
   private agentComponents: Map<number, AgentComponent>;
