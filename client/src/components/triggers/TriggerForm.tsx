@@ -639,6 +639,7 @@ export function TriggerForm({ triggerId, defaultValues }: TriggerFormProps) {
                     )}
                   />
 
+                </div>
                 <Separator className="my-6" />
                 
                 <div className="pb-2">

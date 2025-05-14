@@ -41,6 +41,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from "@/components/ui/separator";
 
 export interface ActionConfig {
   type: string;
