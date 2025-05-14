@@ -478,6 +478,89 @@ export class MemStorage implements IStorage {
     this.toolExecutions.set(id, updatedExecution);
     return updatedExecution;
   }
+
+  // Document Intelligence methods
+  async getDocuments(agentId?: string): Promise<Document[]> {
+    if (agentId) {
+      return Array.from(this.documents.values()).filter(doc => doc.associatedAgentId === agentId);
+    }
+    return Array.from(this.documents.values());
+  }
+
+  async getDocumentById(id: number): Promise<Document | undefined> {
+    return this.documents.get(id);
+  }
+
+  async createDocument(document: InsertDocument): Promise<Document> {
+    const id = this.currentDocumentId++;
+    const newDocument: Document = {
+      ...document,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: document.status || 'Pending'
+    };
+    this.documents.set(id, newDocument);
+    return newDocument;
+  }
+
+  async updateDocument(id: number, document: Partial<Omit<Document, "id">>): Promise<Document | undefined> {
+    const current = this.documents.get(id);
+    if (!current) {
+      return undefined;
+    }
+    
+    const updated = {
+      ...current,
+      ...document,
+      updatedAt: new Date()
+    };
+    
+    this.documents.set(id, updated);
+    return updated;
+  }
+
+  async deleteDocument(id: number): Promise<boolean> {
+    return this.documents.delete(id);
+  }
+
+  async getDocumentAnalyses(documentId: number): Promise<DocumentAnalysis[]> {
+    return Array.from(this.documentAnalyses.values()).filter(
+      analysis => analysis.documentId === documentId
+    );
+  }
+
+  async getDocumentAnalysisById(id: number): Promise<DocumentAnalysis | undefined> {
+    return this.documentAnalyses.get(id);
+  }
+
+  async createDocumentAnalysis(analysis: InsertDocumentAnalysis): Promise<DocumentAnalysis> {
+    const id = this.currentDocumentAnalysisId++;
+    const newAnalysis: DocumentAnalysis = {
+      ...analysis,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.documentAnalyses.set(id, newAnalysis);
+    return newAnalysis;
+  }
+
+  async updateDocumentAnalysis(id: number, analysis: Partial<Omit<DocumentAnalysis, "id">>): Promise<DocumentAnalysis | undefined> {
+    const current = this.documentAnalyses.get(id);
+    if (!current) {
+      return undefined;
+    }
+    
+    const updated = {
+      ...current,
+      ...analysis,
+      updatedAt: new Date()
+    };
+    
+    this.documentAnalyses.set(id, updated);
+    return updated;
+  }
   
   // Initialize with mock data
   private initializeMockData(): void {
@@ -846,6 +929,9 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Import document-related types
+  private documents = db.query.documents;
+  private documentAnalysis = db.query.documentAnalysis;
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -1125,6 +1211,94 @@ export class DatabaseStorage implements IStorage {
       .where(eq(toolExecutions.id, id))
       .returning();
     return updatedExecution || undefined;
+  }
+
+  // Document Intelligence methods
+  async getDocuments(agentId?: string): Promise<Document[]> {
+    let query = db.select().from(documents);
+    
+    if (agentId) {
+      query = query.where(eq(documents.associatedAgentId, agentId));
+    }
+    
+    return await query;
+  }
+
+  async getDocumentById(id: number): Promise<Document | undefined> {
+    const [document] = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.id, id));
+      
+    return document;
+  }
+
+  async createDocument(document: InsertDocument): Promise<Document> {
+    const [createdDocument] = await db
+      .insert(documents)
+      .values(document)
+      .returning();
+      
+    return createdDocument;
+  }
+
+  async updateDocument(id: number, document: Partial<Omit<Document, "id">>): Promise<Document | undefined> {
+    const [updatedDocument] = await db
+      .update(documents)
+      .set({
+        ...document,
+        updatedAt: new Date()
+      })
+      .where(eq(documents.id, id))
+      .returning();
+      
+    return updatedDocument;
+  }
+
+  async deleteDocument(id: number): Promise<boolean> {
+    const result = await db
+      .delete(documents)
+      .where(eq(documents.id, id));
+      
+    return !!result;
+  }
+
+  async getDocumentAnalyses(documentId: number): Promise<DocumentAnalysis[]> {
+    return await db
+      .select()
+      .from(documentAnalysis)
+      .where(eq(documentAnalysis.documentId, documentId));
+  }
+
+  async getDocumentAnalysisById(id: number): Promise<DocumentAnalysis | undefined> {
+    const [analysis] = await db
+      .select()
+      .from(documentAnalysis)
+      .where(eq(documentAnalysis.id, id));
+      
+    return analysis;
+  }
+
+  async createDocumentAnalysis(analysis: InsertDocumentAnalysis): Promise<DocumentAnalysis> {
+    const [createdAnalysis] = await db
+      .insert(documentAnalysis)
+      .values(analysis)
+      .returning();
+      
+    return createdAnalysis;
+  }
+
+  async updateDocumentAnalysis(id: number, analysis: Partial<Omit<DocumentAnalysis, "id">>): Promise<DocumentAnalysis | undefined> {
+    const [updatedAnalysis] = await db
+      .update(documentAnalysis)
+      .set({
+        ...analysis,
+        updatedAt: new Date()
+      })
+      .where(eq(documentAnalysis.id, id))
+      .returning();
+      
+    return updatedAnalysis;
   }
 }
 
