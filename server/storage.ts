@@ -103,6 +103,64 @@ export interface IStorage {
   getTriggerEventById(id: number): Promise<TriggerEvent | undefined>;
   createTriggerEvent(event: InsertTriggerEvent): Promise<TriggerEvent>;
   updateTriggerEvent(id: number, event: Partial<Omit<TriggerEvent, "id">>): Promise<TriggerEvent | undefined>;
+  
+  // Agent Orchestration Canvas methods
+  getFlows(): Promise<Flow[]>;
+  getFlowById(id: number): Promise<Flow | undefined>;
+  createFlow(flow: InsertFlow): Promise<Flow>;
+  updateFlow(id: number, flow: UpdateFlow): Promise<Flow | undefined>;
+  deleteFlow(id: number): Promise<boolean>;
+  
+  getFlowNodes(flowId: number): Promise<FlowNode[]>;
+  getFlowNodeById(id: number): Promise<FlowNode | undefined>;
+  createFlowNode(node: InsertFlowNode): Promise<FlowNode>;
+  updateFlowNode(id: number, node: UpdateFlowNode): Promise<FlowNode | undefined>;
+  deleteFlowNode(id: number): Promise<boolean>;
+  
+  getFlowEdges(flowId: number): Promise<FlowEdge[]>;
+  getFlowEdgeById(id: number): Promise<FlowEdge | undefined>;
+  createFlowEdge(edge: InsertFlowEdge): Promise<FlowEdge>;
+  updateFlowEdge(id: number, edge: UpdateFlowEdge): Promise<FlowEdge | undefined>;
+  deleteFlowEdge(id: number): Promise<boolean>;
+  
+  getFlowExecutions(flowId?: number): Promise<FlowExecution[]>;
+  getFlowExecutionById(id: string): Promise<FlowExecution | undefined>;
+  createFlowExecution(execution: InsertFlowExecution): Promise<FlowExecution>;
+  updateFlowExecution(id: string, execution: Partial<Omit<FlowExecution, "id">>): Promise<FlowExecution | undefined>;
+  
+  getNodeExecutions(flowExecutionId: string): Promise<NodeExecution[]>;
+  getNodeExecutionById(id: string): Promise<NodeExecution | undefined>;
+  createNodeExecution(execution: InsertNodeExecution): Promise<NodeExecution>;
+  updateNodeExecution(id: string, execution: Partial<Omit<NodeExecution, "id">>): Promise<NodeExecution | undefined>;
+  
+  // Data Fabric Explorer methods
+  getDataDomains(parentId?: number): Promise<DataDomain[]>;
+  getDataDomainById(id: number): Promise<DataDomain | undefined>;
+  createDataDomain(domain: InsertDataDomain): Promise<DataDomain>;
+  updateDataDomain(id: number, domain: UpdateDataDomain): Promise<DataDomain | undefined>;
+  deleteDataDomain(id: number): Promise<boolean>;
+  
+  getDataEntities(domainId?: number): Promise<DataEntity[]>;
+  getDataEntityById(id: number): Promise<DataEntity | undefined>;
+  createDataEntity(entity: InsertDataEntity): Promise<DataEntity>;
+  updateDataEntity(id: number, entity: UpdateDataEntity): Promise<DataEntity | undefined>;
+  deleteDataEntity(id: number): Promise<boolean>;
+  
+  getDataRelationships(sourceEntityId?: number): Promise<DataRelationship[]>;
+  getDataRelationshipById(id: number): Promise<DataRelationship | undefined>;
+  createDataRelationship(relationship: InsertDataRelationship): Promise<DataRelationship>;
+  updateDataRelationship(id: number, relationship: UpdateDataRelationship): Promise<DataRelationship | undefined>;
+  deleteDataRelationship(id: number): Promise<boolean>;
+  
+  getDataLineage(entityId?: number): Promise<DataLineage[]>;
+  createDataLineage(lineage: InsertDataLineage): Promise<DataLineage>;
+  
+  getDataQueries(): Promise<DataQuery[]>;
+  getDataQueryById(id: number): Promise<DataQuery | undefined>;
+  createDataQuery(query: InsertDataQuery): Promise<DataQuery>;
+  updateDataQuery(id: number, query: UpdateDataQuery): Promise<DataQuery | undefined>;
+  deleteDataQuery(id: number): Promise<boolean>;
+  executeDataQuery(id: number): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
@@ -120,6 +178,20 @@ export class MemStorage implements IStorage {
   private documentAnalyses: Map<number, DocumentAnalysis>;
   private triggers: Map<number, Trigger>;
   private triggerEvents: Map<number, TriggerEvent>;
+  
+  // Agent Orchestration Canvas properties
+  private flows: Map<number, Flow>;
+  private flowNodes: Map<number, FlowNode>;
+  private flowEdges: Map<number, FlowEdge>;
+  private flowExecutions: Map<string, FlowExecution>;
+  private nodeExecutions: Map<string, NodeExecution>;
+  
+  // Data Fabric Explorer properties
+  private dataDomains: Map<number, DataDomain>;
+  private dataEntities: Map<number, DataEntity>;
+  private dataRelationships: Map<number, DataRelationship>;
+  private dataLineage: Map<number, DataLineage>;
+  private dataQueries: Map<number, DataQuery>;
   private currentUserId: number;
   private currentIssueId: number;
   private currentComponentId: number;
@@ -132,6 +204,18 @@ export class MemStorage implements IStorage {
   private currentDocumentAnalysisId: number;
   private currentTriggerId: number;
   private currentTriggerEventId: number;
+  
+  // Agent Orchestration Canvas counters
+  private currentFlowId: number;
+  private currentFlowNodeId: number;
+  private currentFlowEdgeId: number;
+  
+  // Data Fabric Explorer counters
+  private currentDataDomainId: number;
+  private currentDataEntityId: number;
+  private currentDataRelationshipId: number;
+  private currentDataLineageId: number;
+  private currentDataQueryId: number;
 
   constructor() {
     this.users = new Map();
@@ -148,6 +232,22 @@ export class MemStorage implements IStorage {
     this.documentAnalyses = new Map();
     this.triggers = new Map();
     this.triggerEvents = new Map();
+    
+    // Initialize Agent Orchestration Canvas maps
+    this.flows = new Map();
+    this.flowNodes = new Map();
+    this.flowEdges = new Map();
+    this.flowExecutions = new Map();
+    this.nodeExecutions = new Map();
+    
+    // Initialize Data Fabric Explorer maps
+    this.dataDomains = new Map();
+    this.dataEntities = new Map();
+    this.dataRelationships = new Map();
+    this.dataLineage = new Map();
+    this.dataQueries = new Map();
+    
+    // Initialize counters
     this.currentUserId = 1;
     this.currentIssueId = 1;
     this.currentComponentId = 1;
@@ -160,6 +260,18 @@ export class MemStorage implements IStorage {
     this.currentDocumentAnalysisId = 1;
     this.currentTriggerId = 1;
     this.currentTriggerEventId = 1;
+    
+    // Initialize Agent Orchestration Canvas counters
+    this.currentFlowId = 1;
+    this.currentFlowNodeId = 1;
+    this.currentFlowEdgeId = 1;
+    
+    // Initialize Data Fabric Explorer counters
+    this.currentDataDomainId = 1;
+    this.currentDataEntityId = 1;
+    this.currentDataRelationshipId = 1;
+    this.currentDataLineageId = 1;
+    this.currentDataQueryId = 1;
     
     // Initialize with mock data
     this.initializeMockData();
@@ -534,7 +646,10 @@ export class MemStorage implements IStorage {
       id,
       createdAt: new Date(),
       updatedAt: new Date(),
-      status: document.status || 'Pending'
+      status: document.status || 'Pending',
+      content: document.content || null,
+      uploadedBy: document.uploadedBy || null, 
+      associatedAgentId: document.associatedAgentId || null
     };
     this.documents.set(id, newDocument);
     return newDocument;
@@ -576,7 +691,12 @@ export class MemStorage implements IStorage {
       ...analysis,
       id,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      status: analysis.status || 'Completed',
+      entities: analysis.entities || {},
+      classification: analysis.classification || {},
+      confidence: analysis.confidence || null,
+      summary: analysis.summary || null
     };
     this.documentAnalyses.set(id, newAnalysis);
     return newAnalysis;
@@ -670,10 +790,12 @@ export class MemStorage implements IStorage {
       ...event,
       id,
       timestamp: event.timestamp || new Date(),
+      status: event.status || 'Completed',
       payload: event.payload || null,
       result: event.result || null,
       errorMessage: event.errorMessage || null,
-      runId: event.runId || null
+      runId: event.runId || null,
+      triggerId: event.triggerId || null
     };
     this.triggerEvents.set(id, newEvent);
     

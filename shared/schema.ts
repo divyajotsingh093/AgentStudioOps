@@ -1,5 +1,6 @@
 import { pgTable, text, serial, integer, boolean, timestamp, json, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 // User schema
@@ -312,3 +313,208 @@ export type InsertTrigger = z.infer<typeof insertTriggerSchema>;
 export type UpdateTrigger = z.infer<typeof updateTriggerSchema>;
 export type TriggerEvent = typeof triggerEvents.$inferSelect;
 export type InsertTriggerEvent = z.infer<typeof insertTriggerEventSchema>;
+
+// Agent Orchestration Canvas schemas
+export const nodeTypeEnum = z.enum(['Agent', 'Trigger', 'Tool', 'Decision', 'DataTransform', 'Condition', 'Input', 'Output']);
+export const flowStatusEnum = z.enum(['Active', 'Inactive', 'Draft', 'Testing', 'Archived']);
+export const executionStatusEnum = z.enum(['Running', 'Success', 'Failed', 'Pending', 'Canceled']);
+
+export const flows = pgTable("flows", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default('Draft'),
+  version: text("version").notNull().default('1.0.0'),
+  tags: text("tags").array(),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  metadata: json("metadata").default({}),
+});
+
+export const flowNodes = pgTable("flow_nodes", {
+  id: serial("id").primaryKey(),
+  flowId: integer("flow_id").notNull().references(() => flows.id),
+  type: text("type").notNull(),
+  name: text("name").notNull(),
+  position: json("position").notNull(),
+  config: json("config").default({}),
+  referenceId: text("reference_id"), // ID to the actual agent, tool, etc.
+  referenceType: text("reference_type"), // Type of the reference like "agent" or "tool"
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const flowEdges = pgTable("flow_edges", {
+  id: serial("id").primaryKey(),
+  flowId: integer("flow_id").notNull().references(() => flows.id),
+  sourceId: integer("source_id").notNull().references(() => flowNodes.id),
+  targetId: integer("target_id").notNull().references(() => flowNodes.id),
+  type: text("type").default('default'),
+  label: text("label"),
+  condition: json("condition").default({}),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const flowExecutions = pgTable("flow_executions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  flowId: integer("flow_id").notNull().references(() => flows.id),
+  status: text("status").notNull(),
+  input: json("input").default({}),
+  output: json("output").default({}),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  createdBy: integer("created_by").references(() => users.id),
+  error: text("error"),
+  totalTime: integer("total_time"),
+  metadata: json("metadata").default({}),
+});
+
+export const nodeExecutions = pgTable("node_executions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  flowExecutionId: uuid("flow_execution_id").notNull().references(() => flowExecutions.id),
+  nodeId: integer("node_id").notNull().references(() => flowNodes.id),
+  status: text("status").notNull(),
+  input: json("input").default({}),
+  output: json("output").default({}),
+  error: text("error"),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  executionTime: integer("execution_time"),
+  metadata: json("metadata").default({}),
+});
+
+// Create schemas for insert and select
+export const insertFlowSchema = createInsertSchema(flows).omit({ id: true, createdAt: true, updatedAt: true });
+export const updateFlowSchema = createSelectSchema(flows);
+export const insertFlowNodeSchema = createInsertSchema(flowNodes).omit({ id: true, createdAt: true, updatedAt: true });
+export const updateFlowNodeSchema = createSelectSchema(flowNodes);
+export const insertFlowEdgeSchema = createInsertSchema(flowEdges).omit({ id: true, createdAt: true, updatedAt: true });
+export const updateFlowEdgeSchema = createSelectSchema(flowEdges);
+export const insertFlowExecutionSchema = createInsertSchema(flowExecutions).omit({ id: true, startedAt: true });
+export const insertNodeExecutionSchema = createInsertSchema(nodeExecutions).omit({ id: true, startedAt: true });
+
+// Export types for Flow Canvas
+export type Flow = typeof flows.$inferSelect;
+export type InsertFlow = z.infer<typeof insertFlowSchema>;
+export type UpdateFlow = z.infer<typeof updateFlowSchema>;
+
+export type FlowNode = typeof flowNodes.$inferSelect;
+export type InsertFlowNode = z.infer<typeof insertFlowNodeSchema>;
+export type UpdateFlowNode = z.infer<typeof updateFlowNodeSchema>;
+
+export type FlowEdge = typeof flowEdges.$inferSelect;
+export type InsertFlowEdge = z.infer<typeof insertFlowEdgeSchema>;
+export type UpdateFlowEdge = z.infer<typeof updateFlowEdgeSchema>;
+
+export type FlowExecution = typeof flowExecutions.$inferSelect;
+export type InsertFlowExecution = z.infer<typeof insertFlowExecutionSchema>;
+export type NodeExecution = typeof nodeExecutions.$inferSelect;
+export type InsertNodeExecution = z.infer<typeof insertNodeExecutionSchema>;
+
+// Data Fabric Explorer additional schemas
+export const dataDomains = pgTable("data_domains", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  owner: integer("owner").references(() => users.id),
+  parentId: integer("parent_id"),
+  metadata: json("metadata").default({}),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Add the self-reference after table definition to avoid circular reference
+// This will set up the relationship where a domain can have a parent domain
+export const domainRelations = relations(dataDomains, ({ one }) => ({
+  parent: one(dataDomains, {
+    relationName: "domainToParent",
+    fields: [dataDomains.parentId],
+    references: [dataDomains.id]
+  }),
+  children: one(dataDomains, {
+    relationName: "domainToChildren", 
+    fields: [dataDomains.id],
+    references: [dataDomains.parentId]
+  })
+}));
+
+export const dataEntities = pgTable("data_entities", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  domainId: integer("domain_id").references(() => dataDomains.id),
+  sourceId: integer("source_id").references(() => dataSources.id),
+  entityType: text("entity_type").notNull(), // Table, API Resource, etc.
+  schema: json("schema").notNull(),
+  description: text("description"),
+  tags: text("tags").array(),
+  metadata: json("metadata").default({}),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const dataRelationships = pgTable("data_relationships", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  sourceEntityId: integer("source_entity_id").notNull().references(() => dataEntities.id),
+  targetEntityId: integer("target_entity_id").notNull().references(() => dataEntities.id),
+  relationshipType: text("relationship_type").notNull(), // one-to-one, one-to-many, etc.
+  sourceField: text("source_field").notNull(),
+  targetField: text("target_field").notNull(),
+  description: text("description"),
+  metadata: json("metadata").default({}),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const dataLineage = pgTable("data_lineage", {
+  id: serial("id").primaryKey(),
+  entityId: integer("entity_id").notNull().references(() => dataEntities.id),
+  processId: integer("process_id").references(() => flows.id), // Can be a flow or other process
+  processType: text("process_type").notNull(), // Flow, Connector, etc.
+  operation: text("operation").notNull(), // Read, Write, Transform, etc.
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+  metadata: json("metadata").default({}),
+});
+
+export const dataQueries = pgTable("data_queries", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  queryText: text("query_text").notNull(),
+  savedBy: integer("saved_by").references(() => users.id),
+  resultSchema: json("result_schema").default({}),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  lastExecuted: timestamp("last_executed"),
+  isPublic: boolean("is_public").default(false),
+});
+
+// Create schemas for insert and select
+export const insertDataDomainSchema = createInsertSchema(dataDomains);
+export const updateDataDomainSchema = createSelectSchema(dataDomains);
+export const insertDataEntitySchema = createInsertSchema(dataEntities);
+export const updateDataEntitySchema = createSelectSchema(dataEntities);
+export const insertDataRelationshipSchema = createInsertSchema(dataRelationships);
+export const updateDataRelationshipSchema = createSelectSchema(dataRelationships);
+export const insertDataLineageSchema = createInsertSchema(dataLineage);
+export const insertDataQuerySchema = createInsertSchema(dataQueries);
+export const updateDataQuerySchema = createSelectSchema(dataQueries);
+
+// Type definitions
+export type DataDomain = typeof dataDomains.$inferSelect;
+export type InsertDataDomain = z.infer<typeof insertDataDomainSchema>;
+export type UpdateDataDomain = z.infer<typeof updateDataDomainSchema>;
+export type DataEntity = typeof dataEntities.$inferSelect;
+export type InsertDataEntity = z.infer<typeof insertDataEntitySchema>;
+export type UpdateDataEntity = z.infer<typeof updateDataEntitySchema>;
+export type DataRelationship = typeof dataRelationships.$inferSelect;
+export type InsertDataRelationship = z.infer<typeof insertDataRelationshipSchema>;
+export type UpdateDataRelationship = z.infer<typeof updateDataRelationshipSchema>;
+export type DataLineage = typeof dataLineage.$inferSelect;
+export type InsertDataLineage = z.infer<typeof insertDataLineageSchema>;
+export type DataQuery = typeof dataQueries.$inferSelect;
+export type InsertDataQuery = z.infer<typeof insertDataQuerySchema>;
+export type UpdateDataQuery = z.infer<typeof updateDataQuerySchema>;
