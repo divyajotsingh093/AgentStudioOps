@@ -14,7 +14,10 @@ const ChatPage: React.FC = () => {
   // Fetch all agents
   const { data: agents, isLoading: isLoadingAgents } = useQuery({
     queryKey: ['/api/agents'],
-    queryFn: () => apiRequest('/api/agents'),
+    queryFn: async () => {
+      const response = await apiRequest('/api/agents');
+      return response || [];
+    },
   });
   
   return (
@@ -49,9 +52,9 @@ const ChatPage: React.FC = () => {
                     <SelectValue placeholder="Select an agent" />
                   </SelectTrigger>
                   <SelectContent>
-                    {agents?.map((agent: any) => (
+                    {Array.isArray(agents) && agents.map((agent: any) => (
                       <SelectItem key={agent.id} value={agent.id}>
-                        {agent.name} - {agent.type[0]}
+                        {agent.name} - {Array.isArray(agent.type) ? agent.type[0] : agent.type}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -65,7 +68,10 @@ const ChatPage: React.FC = () => {
           <div className="mt-6">
             <ChatInterface 
               agentId={selectedAgentId} 
-              agentName={agents?.find((a: any) => a.id === selectedAgentId)?.name || 'AI Assistant'}
+              agentName={Array.isArray(agents) ? 
+                (agents.find((a: any) => a.id === selectedAgentId)?.name || 'AI Assistant') : 
+                'AI Assistant'
+              }
             />
           </div>
         )}

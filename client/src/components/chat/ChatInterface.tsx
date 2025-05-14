@@ -39,20 +39,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Query to fetch existing messages if we have a session
   const { data: chatSession, isLoading: isLoadingSession } = useQuery({
     queryKey: ['/api/chat/sessions', sessionId],
-    queryFn: () => apiRequest(`/api/chat/sessions/${sessionId}`),
+    queryFn: async () => {
+      const response = await apiRequest(`/api/chat/sessions/${sessionId}`);
+      return response;
+    },
     enabled: !!sessionId,
   });
   
   // Mutation to send a message
   const sendMessageMutation = useMutation({
-    mutationFn: (payload: { agentId: string; message: string; sessionId?: string }) => 
-      apiRequest('/api/chat/send', {
+    mutationFn: async (payload: { agentId: string; message: string; sessionId?: string }) => {
+      const response = await fetch('/api/chat/send', {
         method: 'POST',
         body: JSON.stringify(payload),
         headers: {
           'Content-Type': 'application/json',
         },
-      }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+      
+      return response.json();
+    },
     onSuccess: (data) => {
       // If this is the first message, we'll get a session ID back
       if (!sessionId && data.sessionId) {
@@ -107,7 +117,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   
   // Render messages
   const renderMessages = () => {
-    if (!chatSession?.messages || chatSession.messages.length === 0) {
+    if (!chatSession || !Array.isArray(chatSession.messages) || chatSession.messages.length === 0) {
       return (
         <div className="py-8 text-center text-muted-foreground">
           <p>No messages yet. Start the conversation by sending a message.</p>
@@ -142,7 +152,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <div className="mt-2">
               <Badge variant={
                 msg.metadata.sentimentAnalysis.score <= 2 ? 'destructive' : 
-                msg.metadata.sentimentAnalysis.score >= 4 ? 'success' : 
+                msg.metadata.sentimentAnalysis.score >= 4 ? 'outline' : 
                 'secondary'
               }>
                 {msg.metadata.sentimentAnalysis.sentiment}
