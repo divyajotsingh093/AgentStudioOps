@@ -37,7 +37,12 @@ import {
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, AlertTriangle, Webhook, Clock, Database, Bell } from 'lucide-react';
+
+// Import drag-and-drop components
+import DraggableConditionBuilder, { ConditionGroup } from '@/components/triggers/DraggableConditionBuilder';
+import ActionBuilder, { ActionConfig } from '@/components/triggers/ActionBuilder';
 
 // Define the form schema with Zod
 const triggerFormSchema = z.object({
@@ -590,39 +595,49 @@ export function TriggerForm({ triggerId, defaultValues }: TriggerFormProps) {
                 )}
               </TabsContent>
 
-              <TabsContent value="advanced" className="pt-4">
-                <FormField
-                  control={form.control}
-                  name="conditions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Conditions (JSON)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder={'{\n  "required": ["document_type"],\n  "properties": {\n    "document_type": {\n      "enum": ["policy", "claim"]\n    }\n  }\n}'}
-                          className="font-mono"
-                          rows={8}
-                          {...field}
-                          value={typeof field.value === 'object' ? JSON.stringify(field.value, null, 2) : field.value || ''}
-                          onChange={(e) => {
-                            try {
-                              // Try to parse as JSON if possible
-                              const parsed = JSON.parse(e.target.value);
-                              field.onChange(parsed);
-                            } catch {
-                              // Otherwise store as string
-                              field.onChange(e.target.value);
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        JSON schema defining conditions for trigger activation (optional)
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <TabsContent value="advanced" className="pt-4 space-y-6">
+                <div className="pb-2">
+                  <h3 className="text-lg font-medium flex items-center mb-2">
+                    <Bell className="w-5 h-5 mr-2 text-indigo-500" />
+                    Trigger Conditions
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Define the specific conditions that must be met for this trigger to activate.
+                    Drag and drop to create complex condition groups.
+                  </p>
+                
+                  <FormField
+                    control={form.control}
+                    name="conditions"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <DraggableConditionBuilder
+                            value={field.value as ConditionGroup || {
+                              id: `root-${Date.now()}`,
+                              operator: 'AND',
+                              conditions: []
+                            }}
+                            onChange={field.onChange}
+                            availableFields={[
+                              { name: 'event.type', type: 'string' },
+                              { name: 'event.timestamp', type: 'date' },
+                              { name: 'event.source', type: 'string' },
+                              { name: 'event.payload.id', type: 'string' },
+                              { name: 'event.payload.status', type: 'string' },
+                              { name: 'event.payload.amount', type: 'number' },
+                              { name: 'event.payload.priority', type: 'string' },
+                              { name: 'event.payload.documentType', type: 'string' },
+                              { name: 'event.payload.customerId', type: 'string' },
+                              { name: 'event.payload.policyNumber', type: 'string' },
+                              { name: 'event.payload.claimNumber', type: 'string' }
+                            ]}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                 <FormField
                   control={form.control}
