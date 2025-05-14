@@ -50,6 +50,11 @@ function Router() {
         <Route path="/tools/new" component={lazy(() => import('@/pages/tools/new'))} />
         <Route path="/tools/:id" component={lazy(() => import('@/pages/tools/[id]'))} />
         
+        {/* Triggers */}
+        <Route path="/triggers" component={lazy(() => import('@/pages/triggers'))} />
+        <Route path="/triggers/new" component={lazy(() => import('@/pages/triggers/new'))} />
+        <Route path="/triggers/:id" component={lazy(() => import('@/pages/triggers/[id]'))} />
+        
         {/* Chat */}
         <Route path="/chat" component={lazy(() => import('@/pages/chat'))} />
         

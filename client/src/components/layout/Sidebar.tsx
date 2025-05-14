@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   Wrench,
-  MessageSquare
+  MessageSquare,
+  BellRing
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
