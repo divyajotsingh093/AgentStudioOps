@@ -194,7 +194,7 @@ export async function initializeDatabase() {
         source_attribute TEXT NOT NULL,
         target_attribute TEXT NOT NULL,
         mapping_type TEXT NOT NULL,
-        transformation TEXT,
+        transformation_rule TEXT,
         is_required BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
