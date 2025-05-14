@@ -26,7 +26,13 @@ import {
   dataEntities, type DataEntity, type InsertDataEntity, type UpdateDataEntity,
   dataRelationships, type DataRelationship, type InsertDataRelationship, type UpdateDataRelationship,
   dataLineage, type DataLineage, type InsertDataLineage,
-  dataQueries, type DataQuery, type InsertDataQuery, type UpdateDataQuery
+  dataQueries, type DataQuery, type InsertDataQuery, type UpdateDataQuery,
+  
+  // Identity Provider (IDP) schemas
+  idpProviders, type IdpProvider, type InsertIdpProvider, type UpdateIdpProvider,
+  idpMappings, type IdpMapping, type InsertIdpMapping, type UpdateIdpMapping,
+  idpRules, type IdpRule, type InsertIdpRule, type UpdateIdpRule,
+  idpSessions, type IdpSession, type InsertIdpSession
 } from "@shared/schema";
 import { db } from './db';
 import { eq } from 'drizzle-orm';
@@ -175,6 +181,32 @@ export interface IStorage {
   updateDataQuery(id: number, query: UpdateDataQuery): Promise<DataQuery | undefined>;
   deleteDataQuery(id: number): Promise<boolean>;
   executeDataQuery(id: number): Promise<any>;
+  
+  // Identity Provider (IDP) methods
+  getIdpProviders(): Promise<IdpProvider[]>;
+  getIdpProviderById(id: number): Promise<IdpProvider | undefined>;
+  createIdpProvider(provider: InsertIdpProvider): Promise<IdpProvider>;
+  updateIdpProvider(id: number, provider: UpdateIdpProvider): Promise<IdpProvider | undefined>;
+  deleteIdpProvider(id: number): Promise<boolean>;
+  verifyIdpProvider(id: number): Promise<boolean>;
+  
+  getIdpMappings(providerId: number): Promise<IdpMapping[]>;
+  getIdpMappingById(id: number): Promise<IdpMapping | undefined>;
+  createIdpMapping(mapping: InsertIdpMapping): Promise<IdpMapping>;
+  updateIdpMapping(id: number, mapping: UpdateIdpMapping): Promise<IdpMapping | undefined>;
+  deleteIdpMapping(id: number): Promise<boolean>;
+  
+  getIdpRules(providerId: number): Promise<IdpRule[]>;
+  getIdpRuleById(id: number): Promise<IdpRule | undefined>;
+  createIdpRule(rule: InsertIdpRule): Promise<IdpRule>;
+  updateIdpRule(id: number, rule: UpdateIdpRule): Promise<IdpRule | undefined>;
+  deleteIdpRule(id: number): Promise<boolean>;
+  
+  getIdpSessions(userId?: number): Promise<IdpSession[]>;
+  getIdpSessionById(id: string): Promise<IdpSession | undefined>;
+  createIdpSession(session: InsertIdpSession): Promise<IdpSession>;
+  updateIdpSession(id: string, sessionData: any): Promise<IdpSession | undefined>;
+  terminateIdpSession(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -570,6 +602,177 @@ export class MemStorage implements IStorage {
   
   async executeDataQuery(id: number): Promise<any> {
     return { rows: [], columns: [] };
+  }
+  
+  // Identity Provider (IDP) methods
+  async getIdpProviders(): Promise<IdpProvider[]> {
+    return [];
+  }
+  
+  async getIdpProviderById(id: number): Promise<IdpProvider | undefined> {
+    return undefined;
+  }
+  
+  async createIdpProvider(provider: InsertIdpProvider): Promise<IdpProvider> {
+    return {
+      id: 1,
+      name: provider.name,
+      description: provider.description || null,
+      type: provider.type,
+      status: provider.status || 'Inactive',
+      config: provider.config,
+      metadata: provider.metadata || {},
+      createdBy: provider.createdBy || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastVerifiedAt: null
+    };
+  }
+  
+  async updateIdpProvider(id: number, provider: UpdateIdpProvider): Promise<IdpProvider | undefined> {
+    return {
+      id,
+      name: provider.name || 'Updated Provider',
+      description: provider.description || null,
+      type: provider.type || 'OIDC',
+      status: provider.status || 'Inactive',
+      config: provider.config || {},
+      metadata: provider.metadata || {},
+      createdBy: provider.createdBy || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastVerifiedAt: provider.lastVerifiedAt || null
+    };
+  }
+  
+  async deleteIdpProvider(id: number): Promise<boolean> {
+    return true;
+  }
+  
+  async verifyIdpProvider(id: number): Promise<boolean> {
+    return true;
+  }
+  
+  async getIdpMappings(providerId: number): Promise<IdpMapping[]> {
+    return [];
+  }
+  
+  async getIdpMappingById(id: number): Promise<IdpMapping | undefined> {
+    return undefined;
+  }
+  
+  async createIdpMapping(mapping: InsertIdpMapping): Promise<IdpMapping> {
+    return {
+      id: 1,
+      providerId: mapping.providerId,
+      sourceAttribute: mapping.sourceAttribute,
+      targetAttribute: mapping.targetAttribute,
+      transformationRule: mapping.transformationRule || null,
+      isRequired: mapping.isRequired || false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async updateIdpMapping(id: number, mapping: UpdateIdpMapping): Promise<IdpMapping | undefined> {
+    return {
+      id,
+      providerId: mapping.providerId || 1,
+      sourceAttribute: mapping.sourceAttribute || 'email',
+      targetAttribute: mapping.targetAttribute || 'email',
+      transformationRule: mapping.transformationRule || null,
+      isRequired: mapping.isRequired || false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async deleteIdpMapping(id: number): Promise<boolean> {
+    return true;
+  }
+  
+  async getIdpRules(providerId: number): Promise<IdpRule[]> {
+    return [];
+  }
+  
+  async getIdpRuleById(id: number): Promise<IdpRule | undefined> {
+    return undefined;
+  }
+  
+  async createIdpRule(rule: InsertIdpRule): Promise<IdpRule> {
+    return {
+      id: 1,
+      providerId: rule.providerId,
+      name: rule.name,
+      description: rule.description || null,
+      condition: rule.condition,
+      action: rule.action,
+      priority: rule.priority || 0,
+      isEnabled: rule.isEnabled || true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async updateIdpRule(id: number, rule: UpdateIdpRule): Promise<IdpRule | undefined> {
+    return {
+      id,
+      providerId: rule.providerId || 1,
+      name: rule.name || 'Updated Rule',
+      description: rule.description || null,
+      condition: rule.condition || {},
+      action: rule.action || {},
+      priority: rule.priority || 0,
+      isEnabled: rule.isEnabled || true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+  
+  async deleteIdpRule(id: number): Promise<boolean> {
+    return true;
+  }
+  
+  async getIdpSessions(userId?: number): Promise<IdpSession[]> {
+    return [];
+  }
+  
+  async getIdpSessionById(id: string): Promise<IdpSession | undefined> {
+    return undefined;
+  }
+  
+  async createIdpSession(session: InsertIdpSession): Promise<IdpSession> {
+    return {
+      id: session.id || 'session-1',
+      userId: session.userId || null,
+      providerId: session.providerId || null,
+      externalId: session.externalId || null,
+      sessionData: session.sessionData || {},
+      startedAt: new Date(),
+      expiresAt: session.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      lastActivityAt: new Date(),
+      ipAddress: session.ipAddress || null,
+      userAgent: session.userAgent || null
+    };
+  }
+  
+  async updateIdpSession(id: string, sessionData: any): Promise<IdpSession | undefined> {
+    return {
+      id,
+      userId: 1,
+      providerId: 1,
+      externalId: 'ext-id',
+      sessionData: sessionData || {},
+      startedAt: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      lastActivityAt: new Date(),
+      ipAddress: '127.0.0.1',
+      userAgent: 'Mozilla/5.0'
+    };
+  }
+  
+  async terminateIdpSession(id: string): Promise<boolean> {
+    return true;
   }
   private users: Map<number, User>;
   private agents: Map<string, Agent>;

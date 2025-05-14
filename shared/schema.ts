@@ -518,3 +518,80 @@ export type InsertDataLineage = z.infer<typeof insertDataLineageSchema>;
 export type DataQuery = typeof dataQueries.$inferSelect;
 export type InsertDataQuery = z.infer<typeof insertDataQuerySchema>;
 export type UpdateDataQuery = z.infer<typeof updateDataQuerySchema>;
+
+// Identity Provider (IDP) schemas
+export const idpProviderTypeEnum = z.enum(['OIDC', 'SAML', 'OAuth2', 'LDAP', 'Custom']);
+export const idpStatusEnum = z.enum(['Active', 'Inactive', 'Testing', 'Deprecated']);
+
+export const idpProviders = pgTable("idp_providers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(),
+  status: text("status").notNull().default('Inactive'),
+  config: json("config").notNull(),
+  metadata: json("metadata").default({}),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  lastVerifiedAt: timestamp("last_verified_at"),
+});
+
+export const idpMappings = pgTable("idp_mappings", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").notNull().references(() => idpProviders.id),
+  sourceAttribute: text("source_attribute").notNull(),
+  targetAttribute: text("target_attribute").notNull(),
+  transformationRule: text("transformation_rule"),
+  isRequired: boolean("is_required").default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const idpRules = pgTable("idp_rules", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").notNull().references(() => idpProviders.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  condition: json("condition").notNull(),
+  action: json("action").notNull(),
+  priority: integer("priority").default(0),
+  isEnabled: boolean("is_enabled").default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const idpSessions = pgTable("idp_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: integer("user_id").references(() => users.id),
+  providerId: integer("provider_id").references(() => idpProviders.id),
+  externalId: text("external_id"),
+  sessionData: json("session_data").default({}),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  lastActivityAt: timestamp("last_activity_at").notNull().defaultNow(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+});
+
+// Create schemas for insert and select
+export const insertIdpProviderSchema = createInsertSchema(idpProviders);
+export const updateIdpProviderSchema = createSelectSchema(idpProviders);
+export const insertIdpMappingSchema = createInsertSchema(idpMappings);
+export const updateIdpMappingSchema = createSelectSchema(idpMappings);
+export const insertIdpRuleSchema = createInsertSchema(idpRules);
+export const updateIdpRuleSchema = createSelectSchema(idpRules);
+export const insertIdpSessionSchema = createInsertSchema(idpSessions);
+
+// Type definitions
+export type IdpProvider = typeof idpProviders.$inferSelect;
+export type InsertIdpProvider = z.infer<typeof insertIdpProviderSchema>;
+export type UpdateIdpProvider = z.infer<typeof updateIdpProviderSchema>;
+export type IdpMapping = typeof idpMappings.$inferSelect;
+export type InsertIdpMapping = z.infer<typeof insertIdpMappingSchema>;
+export type UpdateIdpMapping = z.infer<typeof updateIdpMappingSchema>;
+export type IdpRule = typeof idpRules.$inferSelect;
+export type InsertIdpRule = z.infer<typeof insertIdpRuleSchema>;
+export type UpdateIdpRule = z.infer<typeof updateIdpRuleSchema>;
+export type IdpSession = typeof idpSessions.$inferSelect;
+export type InsertIdpSession = z.infer<typeof insertIdpSessionSchema>;
