@@ -14,6 +14,7 @@ import {
 import { z } from "zod";
 import aiRoutes from './ai-routes';
 import documentRoutes from './document-routes';
+import chatRoutes, { registerChatWebSocketHandler } from './chat-routes';
 
 // Collaborative editing types
 interface CollaborationSession {
@@ -72,6 +73,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register Document routes
   app.use('/api/documents', documentRoutes);
+  
+  // Register Chat routes
+  app.use('/api/chat', chatRoutes);
   
   // Agents API
   app.get("/api/agents", async (req, res) => {
