@@ -1,33 +1,32 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  DndContext,
-  DragOverlay,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
+import React, { useState } from 'react';
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
   useSensors,
   DragStartEvent,
   DragEndEvent,
+  DragOverlay
 } from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  useSortable
 } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, Trash2, GripVertical, X, AlertTriangle } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { motion, AnimatePresence } from 'framer-motion';
+import { PlusCircle, X, GripVertical, Plus, Trash2, Filter, SquareBrackets, CircleDashed, CircleEqual } from 'lucide-react';
 
+// Define types for our condition builder
 export type ConditionOperatorType = 'AND' | 'OR';
 export type ConditionComparatorType = 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than' | 'exists' | 'not_exists';
 
@@ -44,297 +43,292 @@ export interface ConditionGroup {
   conditions: (ConditionItem | ConditionGroup)[];
 }
 
-interface DraggableConditionBuilderProps {
-  value: ConditionGroup;
-  onChange: (value: ConditionGroup) => void;
+interface ConditionFieldProps {
+  condition: ConditionItem;
+  onChange: (updatedCondition: ConditionItem) => void;
+  onRemove: () => void;
   availableFields?: { name: string; type: string }[];
 }
 
-// Component to render a single draggable condition item
-const SortableConditionItem = ({
-  condition,
-  index,
-  onRemove,
-  onChange,
-  availableFields,
-}: {
-  condition: ConditionItem;
-  index: number;
-  onRemove: () => void;
-  onChange: (updatedCondition: ConditionItem) => void;
-  availableFields?: { name: string; type: string }[];
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: condition.id });
-
+// Component for a single condition
+const ConditionField: React.FC<ConditionFieldProps> = ({ condition, onChange, onRemove, availableFields = [] }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: condition.id });
+  
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1 : 0,
   };
 
-  const comparatorOptions = [
-    { value: 'equals', label: 'Equals' },
-    { value: 'not_equals', label: 'Not Equals' },
-    { value: 'contains', label: 'Contains' },
-    { value: 'greater_than', label: 'Greater Than' },
-    { value: 'less_than', label: 'Less Than' },
-    { value: 'exists', label: 'Exists' },
-    { value: 'not_exists', label: 'Not Exists' },
-  ];
+  const fieldType = availableFields.find(f => f.name === condition.field)?.type || 'string';
 
   return (
-    <motion.div
-      ref={setNodeRef}
-      style={style}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, height: 0 }}
-      className="mb-4 bg-white rounded-lg shadow-sm border p-4 relative"
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className="flex items-center space-x-2 p-3 border rounded-md bg-white dark:bg-slate-900 mb-2"
     >
-      <div className="flex items-center gap-2 mb-2">
-        <div
-          className="cursor-grab p-2 hover:bg-gray-50 rounded"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical size={16} className="text-gray-400" />
-        </div>
-        <Label className="text-sm font-medium flex-grow">Condition {index + 1}</Label>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onRemove}
-          className="h-8 w-8 p-0 rounded-full"
-        >
-          <X size={16} className="text-gray-500" />
-        </Button>
+      <div {...attributes} {...listeners} className="cursor-grab">
+        <GripVertical className="h-5 w-5 text-slate-400" />
       </div>
-
-      <div className="grid grid-cols-12 gap-3">
-        <div className="col-span-5">
-          <Label htmlFor={`field-${condition.id}`} className="text-xs mb-1 block">
-            Field
-          </Label>
-          <Select
-            value={condition.field}
-            onValueChange={(value) => onChange({ ...condition, field: value })}
-          >
-            <SelectTrigger id={`field-${condition.id}`}>
-              <SelectValue placeholder="Select field" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableFields ? (
-                availableFields.map((field) => (
-                  <SelectItem key={field.name} value={field.name}>
-                    {field.name} <span className="text-xs text-gray-500">({field.type})</span>
-                  </SelectItem>
-                ))
-              ) : (
-                <>
-                  <SelectItem value="event.type">event.type</SelectItem>
-                  <SelectItem value="event.timestamp">event.timestamp</SelectItem>
-                  <SelectItem value="event.payload.id">event.payload.id</SelectItem>
-                  <SelectItem value="event.payload.status">event.payload.status</SelectItem>
-                  <SelectItem value="event.payload.amount">event.payload.amount</SelectItem>
-                  <SelectItem value="event.source">event.source</SelectItem>
-                </>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="col-span-3">
-          <Label htmlFor={`comparator-${condition.id}`} className="text-xs mb-1 block">
-            Comparator
-          </Label>
-          <Select
-            value={condition.comparator}
-            onValueChange={(value) => onChange({ ...condition, comparator: value as ConditionComparatorType })}
-          >
-            <SelectTrigger id={`comparator-${condition.id}`}>
-              <SelectValue placeholder="Select operator" />
-            </SelectTrigger>
-            <SelectContent>
-              {comparatorOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="col-span-4">
-          <Label htmlFor={`value-${condition.id}`} className="text-xs mb-1 block">
-            Value
-          </Label>
-          <Input
-            id={`value-${condition.id}`}
-            value={condition.value as string}
-            onChange={(e) => onChange({ ...condition, value: e.target.value })}
-            disabled={['exists', 'not_exists'].includes(condition.comparator)}
-            placeholder={['exists', 'not_exists'].includes(condition.comparator) ? 'N/A' : 'Enter value'}
-          />
-        </div>
-      </div>
-    </motion.div>
+      
+      <Select
+        value={condition.field}
+        onValueChange={(value) => onChange({ ...condition, field: value })}
+      >
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="Select field" />
+        </SelectTrigger>
+        <SelectContent>
+          {availableFields.map((field) => (
+            <SelectItem key={field.name} value={field.name}>
+              {field.name}
+              <Badge variant="outline" className="ml-2 text-xs">{field.type}</Badge>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      
+      <Select
+        value={condition.comparator}
+        onValueChange={(value) => onChange({ ...condition, comparator: value as ConditionComparatorType })}
+      >
+        <SelectTrigger className="w-[150px]">
+          <SelectValue placeholder="Comparator" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="equals">Equals</SelectItem>
+          <SelectItem value="not_equals">Not Equals</SelectItem>
+          <SelectItem value="contains">Contains</SelectItem>
+          <SelectItem value="greater_than">Greater Than</SelectItem>
+          <SelectItem value="less_than">Less Than</SelectItem>
+          <SelectItem value="exists">Exists</SelectItem>
+          <SelectItem value="not_exists">Not Exists</SelectItem>
+        </SelectContent>
+      </Select>
+      
+      {condition.comparator !== 'exists' && condition.comparator !== 'not_exists' && (
+        <Input
+          type={fieldType === 'number' ? 'number' : 'text'}
+          value={condition.value.toString()}
+          onChange={(e) => {
+            const value = fieldType === 'number' 
+              ? parseFloat(e.target.value) 
+              : e.target.value;
+            onChange({ ...condition, value });
+          }}
+          className="w-[180px]"
+          placeholder="Value"
+        />
+      )}
+      
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={onRemove} 
+        className="text-slate-400 hover:text-red-500"
+      >
+        <X className="h-5 w-5" />
+      </Button>
+    </div>
   );
 };
 
-// Component to render a group of conditions with an operator (AND/OR)
-const SortableConditionGroup = ({
-  group,
-  onUpdate,
-  onRemove,
-  depth = 0,
-  availableFields,
-}: {
+interface ConditionGroupProps {
   group: ConditionGroup;
   onUpdate: (updatedGroup: ConditionGroup) => void;
   onRemove?: () => void;
   depth?: number;
   availableFields?: { name: string; type: string }[];
+}
+
+// Component for a group of conditions
+const ConditionGroupComponent: React.FC<ConditionGroupProps> = ({ 
+  group, 
+  onUpdate, 
+  onRemove,
+  depth = 0,
+  availableFields = []
 }) => {
-  const isRootLevel = depth === 0;
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeItem, setActiveItem] = useState<ConditionItem | null>(null);
+  
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
+    useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeItem, setActiveItem] = useState<ConditionItem | null>(null);
-
-  // Generate a new unique ID
-  const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-  // Add a new condition
-  const addCondition = () => {
-    const newCondition: ConditionItem = {
-      id: generateId(),
-      field: '',
-      comparator: 'equals',
-      value: '',
-    };
-
-    onUpdate({
-      ...group,
-      conditions: [...group.conditions, newCondition],
-    });
+  const getConditionIds = () => {
+    return group.conditions
+      .filter(item => 'field' in item) // Only include ConditionItems, not nested groups
+      .map(item => (item as ConditionItem).id);
   };
 
-  // Add a new nested group
-  const addGroup = () => {
-    const newGroup: ConditionGroup = {
-      id: generateId(),
-      operator: 'AND',
-      conditions: [],
-    };
-
-    onUpdate({
-      ...group,
-      conditions: [...group.conditions, newGroup],
-    });
-  };
-
-  // Update a specific condition
-  const updateCondition = (id: string, updatedCondition: ConditionItem | ConditionGroup) => {
-    onUpdate({
-      ...group,
-      conditions: group.conditions.map((condition) =>
-        condition.id === id ? updatedCondition : condition
-      ),
-    });
-  };
-
-  // Remove a specific condition
-  const removeCondition = (id: string) => {
-    onUpdate({
-      ...group,
-      conditions: group.conditions.filter((condition) => condition.id !== id),
-    });
-  };
-
-  // Handle drag start
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     setActiveId(active.id as string);
     
-    const draggedItem = group.conditions.find((item) => item.id === active.id) as ConditionItem;
-    if (draggedItem && 'field' in draggedItem) {
+    const draggedItem = group.conditions.find(item => 
+      'field' in item && (item as ConditionItem).id === active.id
+    ) as ConditionItem;
+    
+    if (draggedItem) {
       setActiveItem(draggedItem);
     }
   };
 
-  // Handle drag end
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
     if (over && active.id !== over.id) {
-      const oldIndex = group.conditions.findIndex((item) => item.id === active.id);
-      const newIndex = group.conditions.findIndex((item) => item.id === over.id);
+      const oldIndex = group.conditions.findIndex(item => 
+        'field' in item && (item as ConditionItem).id === active.id
+      );
+      const newIndex = group.conditions.findIndex(item => 
+        'field' in item && (item as ConditionItem).id === over.id
+      );
       
-      onUpdate({
-        ...group,
-        conditions: arrayMove(group.conditions, oldIndex, newIndex),
-      });
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newConditions = [...group.conditions];
+        const [removed] = newConditions.splice(oldIndex, 1);
+        newConditions.splice(newIndex, 0, removed);
+        
+        onUpdate({
+          ...group,
+          conditions: newConditions
+        });
+      }
     }
     
     setActiveId(null);
     setActiveItem(null);
   };
 
-  const itemsEmpty = group.conditions.length === 0;
+  const handleAddCondition = () => {
+    const newCondition: ConditionItem = {
+      id: `condition-${Date.now()}`,
+      field: availableFields.length > 0 ? availableFields[0].name : '',
+      comparator: 'equals',
+      value: ''
+    };
+    
+    onUpdate({
+      ...group,
+      conditions: [...group.conditions, newCondition]
+    });
+  };
+
+  const handleAddGroup = () => {
+    const newGroup: ConditionGroup = {
+      id: `group-${Date.now()}`,
+      operator: 'AND',
+      conditions: []
+    };
+    
+    onUpdate({
+      ...group,
+      conditions: [...group.conditions, newGroup]
+    });
+  };
+
+  const handleOperatorChange = (value: ConditionOperatorType) => {
+    onUpdate({
+      ...group,
+      operator: value
+    });
+  };
+
+  const handleUpdateCondition = (index: number, updatedCondition: ConditionItem) => {
+    const newConditions = [...group.conditions];
+    newConditions[index] = updatedCondition;
+    
+    onUpdate({
+      ...group,
+      conditions: newConditions
+    });
+  };
+
+  const handleRemoveCondition = (index: number) => {
+    const newConditions = [...group.conditions];
+    newConditions.splice(index, 1);
+    
+    onUpdate({
+      ...group,
+      conditions: newConditions
+    });
+  };
+
+  const handleUpdateNestedGroup = (index: number, updatedGroup: ConditionGroup) => {
+    const newConditions = [...group.conditions];
+    newConditions[index] = updatedGroup;
+    
+    onUpdate({
+      ...group,
+      conditions: newConditions
+    });
+  };
+
+  const handleRemoveNestedGroup = (index: number) => {
+    const newConditions = [...group.conditions];
+    newConditions.splice(index, 1);
+    
+    onUpdate({
+      ...group,
+      conditions: newConditions
+    });
+  };
+
+  const isRoot = depth === 0;
+  const bgColor = depth % 2 === 0 
+    ? 'bg-slate-50 dark:bg-slate-900' 
+    : 'bg-white dark:bg-slate-800';
 
   return (
-    <Card className={`mb-4 ${depth > 0 ? 'border-indigo-100' : 'border'}`}>
-      <CardHeader className="py-3 px-4 flex flex-row items-center justify-between space-y-0">
-        <div className="flex items-center gap-3">
+    <Card className={`border ${isRoot ? 'border-indigo-100 dark:border-indigo-900' : 'border-slate-200 dark:border-slate-700'} ${bgColor}`}>
+      <CardHeader className="p-3 pb-0 flex flex-row items-center justify-between">
+        <div className="flex items-center space-x-2">
+          {group.operator === 'AND' ? (
+            <CircleEqual className="h-5 w-5 text-indigo-500" />
+          ) : (
+            <CircleDashed className="h-5 w-5 text-orange-500" />
+          )}
           <CardTitle className="text-base">
-            {isRootLevel ? 'Condition Builder' : `Group (Depth: ${depth})`}
-          </CardTitle>
-          <div className="flex gap-2">
-            <Select 
-              value={group.operator} 
-              onValueChange={(value) => onUpdate({ ...group, operator: value as ConditionOperatorType })}
-            >
-              <SelectTrigger className="h-8 w-20">
-                <SelectValue placeholder="AND" />
+            <Select value={group.operator} onValueChange={(value) => handleOperatorChange(value as ConditionOperatorType)}>
+              <SelectTrigger className="w-[100px]">
+                <SelectValue placeholder="Operator" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="AND">AND</SelectItem>
-                <SelectItem value="OR">OR</SelectItem>
+                <SelectItem value="AND">
+                  <div className="flex items-center">
+                    <CircleEqual className="h-4 w-4 mr-2 text-indigo-500" />
+                    AND
+                  </div>
+                </SelectItem>
+                <SelectItem value="OR">
+                  <div className="flex items-center">
+                    <CircleDashed className="h-4 w-4 mr-2 text-orange-500" />
+                    OR
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
-            {group.conditions.length > 0 && (
-              <Badge variant="outline" className="h-8 px-3 flex items-center">
-                {group.conditions.length} {group.conditions.length === 1 ? 'Condition' : 'Conditions'}
-              </Badge>
-            )}
-          </div>
+          </CardTitle>
         </div>
         
-        {!isRootLevel && onRemove && (
-          <Button variant="ghost" size="icon" onClick={onRemove} className="text-red-500 h-8 w-8">
-            <Trash2 size={16} />
+        {!isRoot && onRemove && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onRemove} 
+            className="text-slate-400 hover:text-red-500"
+          >
+            <Trash2 className="h-4 w-4" />
           </Button>
         )}
       </CardHeader>
       
-      <CardContent className={`pt-0 px-4 pb-4 ${depth > 0 ? 'bg-indigo-50/20' : ''}`}>
+      <CardContent className="p-3 space-y-2">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -342,82 +336,69 @@ const SortableConditionGroup = ({
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={group.conditions.map((item) => item.id)}
+            items={getConditionIds()}
             strategy={verticalListSortingStrategy}
           >
-            <AnimatePresence>
-              {group.conditions.map((condition, index) => {
-                if ('field' in condition) {
-                  // This is a condition item
-                  return (
-                    <SortableConditionItem
-                      key={condition.id}
-                      condition={condition}
-                      index={index}
-                      onRemove={() => removeCondition(condition.id)}
-                      onChange={(updatedCondition) => updateCondition(condition.id, updatedCondition)}
-                      availableFields={availableFields}
-                    />
-                  );
-                } else {
-                  // This is a nested condition group
-                  return (
-                    <SortableConditionGroup
-                      key={condition.id}
-                      group={condition}
-                      onUpdate={(updatedGroup) => updateCondition(condition.id, updatedGroup)}
-                      onRemove={() => removeCondition(condition.id)}
-                      depth={depth + 1}
-                      availableFields={availableFields}
-                    />
-                  );
-                }
-              })}
-            </AnimatePresence>
+            {group.conditions.map((condition, index) => {
+              if ('operator' in condition) {
+                // Render nested condition group
+                return (
+                  <ConditionGroupComponent
+                    key={condition.id}
+                    group={condition}
+                    onUpdate={(updatedGroup) => handleUpdateNestedGroup(index, updatedGroup)}
+                    onRemove={() => handleRemoveNestedGroup(index)}
+                    depth={depth + 1}
+                    availableFields={availableFields}
+                  />
+                );
+              } else if ('field' in condition) {
+                // Render condition item
+                return (
+                  <ConditionField
+                    key={condition.id}
+                    condition={condition}
+                    onChange={(updatedCondition) => handleUpdateCondition(index, updatedCondition)}
+                    onRemove={() => handleRemoveCondition(index)}
+                    availableFields={availableFields}
+                  />
+                );
+              }
+              return null;
+            })}
           </SortableContext>
-
-          {activeId && activeItem && (
-            <DragOverlay>
-              <div className="bg-white border rounded-lg shadow-lg p-4 opacity-80 mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <GripVertical size={16} className="text-gray-400" />
-                  <span className="text-sm font-medium">
-                    {activeItem.field || 'New condition'}
-                  </span>
-                </div>
+          
+          <DragOverlay>
+            {activeId && activeItem && (
+              <div className="opacity-80">
+                <ConditionField
+                  condition={activeItem}
+                  onChange={() => {}}
+                  onRemove={() => {}}
+                  availableFields={availableFields}
+                />
               </div>
-            </DragOverlay>
-          )}
+            )}
+          </DragOverlay>
         </DndContext>
-
-        {itemsEmpty && (
-          <div className="flex flex-col items-center justify-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-            <AlertTriangle size={32} className="text-gray-400 mb-3" />
-            <p className="text-gray-500 mb-4 text-center">
-              No conditions added yet. Add a condition or group to define when this trigger should activate.
-            </p>
-          </div>
-        )}
-
-        <div className="flex gap-2 mt-4">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addCondition}
-            className="shadow-none"
+        
+        <div className="flex items-center space-x-2 mt-4">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleAddCondition} 
+            className="flex items-center text-slate-700 dark:text-slate-300"
           >
-            <Plus size={16} className="mr-1" />
+            <Filter className="h-4 w-4 mr-1" />
             Add Condition
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addGroup}
-            className="shadow-none bg-indigo-50/50"
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleAddGroup} 
+            className="flex items-center text-slate-700 dark:text-slate-300"
           >
-            <Plus size={16} className="mr-1" />
+            <SquareBrackets className="h-4 w-4 mr-1" />
             Add Group
           </Button>
         </div>
@@ -426,22 +407,28 @@ const SortableConditionGroup = ({
   );
 };
 
+interface DraggableConditionBuilderProps {
+  value: ConditionGroup;
+  onChange: (value: ConditionGroup) => void;
+  availableFields?: { name: string; type: string }[];
+}
+
 export const DraggableConditionBuilder: React.FC<DraggableConditionBuilderProps> = ({
   value,
   onChange,
-  availableFields,
+  availableFields = []
 }) => {
-  // Initialize with default values if not provided
-  const initialValue = value || {
-    id: `group-${Date.now()}`,
+  // Ensure the group has an operator
+  const group = value ? value : {
+    id: `root-${Date.now()}`,
     operator: 'AND' as ConditionOperatorType,
-    conditions: [],
+    conditions: []
   };
 
   return (
-    <div className="condition-builder">
-      <SortableConditionGroup
-        group={initialValue}
+    <div className="w-full">
+      <ConditionGroupComponent
+        group={group}
         onUpdate={onChange}
         availableFields={availableFields}
       />

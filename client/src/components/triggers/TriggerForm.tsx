@@ -38,7 +38,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, AlertTriangle, Webhook, Clock, Database, Bell } from 'lucide-react';
+import { Calendar, AlertTriangle, Webhook, Clock, Database, Bell, PlayCircle } from 'lucide-react';
 
 // Import drag-and-drop components
 import DraggableConditionBuilder, { ConditionGroup } from '@/components/triggers/DraggableConditionBuilder';
