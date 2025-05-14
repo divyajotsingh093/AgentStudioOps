@@ -542,6 +542,7 @@ export const idpMappings = pgTable("idp_mappings", {
   providerId: integer("provider_id").notNull().references(() => idpProviders.id),
   sourceAttribute: text("source_attribute").notNull(),
   targetAttribute: text("target_attribute").notNull(),
+  mappingType: text("mapping_type").notNull(),
   transformationRule: text("transformation_rule"),
   isRequired: boolean("is_required").default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
