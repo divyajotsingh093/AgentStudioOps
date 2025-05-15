@@ -78,8 +78,8 @@ const RunTable = ({ runs }: RunTableProps) => {
                   <TableCell>${run.cost.toFixed(4)}</TableCell>
                   <TableCell>{run.timestamp}</TableCell>
                   <TableCell className="text-right">
-                    <Link href={`/runs/${run.id}`}>
-                      <a className="text-primary hover:text-primary/80">View</a>
+                    <Link href={`/runs/${run.id}`} className="text-primary hover:text-primary/80">
+                      View
                     </Link>
                   </TableCell>
                 </TableRow>
