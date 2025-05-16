@@ -1,9 +1,10 @@
 import { useParams } from "wouter";
-
-import AgentExecutionPage from "@/components/agents/execution/AgentExecutionPage";
+import { AgentExecution } from "@/components/agents/AgentExecution";
 
 export default function AgentExecutionRoute() {
+  const { id } = useParams();
+  // This route is for direct navigation to the execution page
   return (
-    <AgentExecutionPage />
+    <AgentExecution agentName="Agent Execution" agentId={id || ""} />
   );
 }
