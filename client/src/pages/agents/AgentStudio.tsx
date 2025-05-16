@@ -14,6 +14,7 @@ import AgentVersionDiff from "@/components/agents/builder/AgentVersionDiff";
 import AgentDataLineage from "@/components/agents/builder/AgentDataLineage";
 import AgentToolTelemetry from "@/components/agents/builder/AgentToolTelemetry";
 import AgentSettings from "@/components/agents/builder/AgentSettings";
+import { AgentExecutionPage } from "@/components/agents/execution/AgentExecutionPage";
 import { agents, contextItems, toolItems, promptItems, policyItems, chatMessages, reasoningTraces } from "@/lib/mock-data";
 import { Agent, ChatMessage, PromptItem } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -156,6 +157,14 @@ const AgentStudio = () => {
               agentName={agent.name}
             />
           </>
+        )}
+        
+        {activeTab === 'Execution' && (
+          <div className="flex-1 overflow-y-auto">
+            <div className="container mx-auto py-6">
+              <AgentExecutionPage />
+            </div>
+          </div>
         )}
         
         {activeTab === 'Metrics' && (

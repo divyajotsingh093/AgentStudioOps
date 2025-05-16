@@ -85,7 +85,7 @@ const mockTasks: Task[] = [
   }
 ];
 
-export default function AgentExecutionPage() {
+export function AgentExecutionPage() {
   const { id } = useParams();
   const [selectedExecution, setSelectedExecution] = useState<string | null>(null);
   const queryClient = useQueryClient();

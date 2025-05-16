@@ -39,6 +39,7 @@ const StudioHeader = ({
   const tabs = [
     { id: 'Overview', icon: <LayoutDashboard className="h-4 w-4 mr-2" /> },
     { id: 'Build', icon: <Wrench className="h-4 w-4 mr-2" /> },
+    { id: 'Execution', icon: <PlayCircle className="h-4 w-4 mr-2" /> },
     { id: 'Metrics', icon: <BarChart2 className="h-4 w-4 mr-2" /> },
     { id: 'Eval', icon: <ClipboardCheck className="h-4 w-4 mr-2" /> },
     { id: 'Policy', icon: <ShieldCheck className="h-4 w-4 mr-2" /> },
