@@ -3,7 +3,6 @@ import { useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AgentExecutionHeader } from "./AgentExecutionHeader";
 import { AgentActivityList, type ExecutionActivity, type Task } from "./AgentActivityList";
-import { Shell } from "@/components/layout/Shell";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
@@ -165,28 +164,24 @@ export default function AgentExecutionPage() {
 
   if (isLoadingAgent) {
     return (
-      <Shell>
-        <div className="container mx-auto py-6">
-          <Skeleton className="h-12 w-1/3 mb-6" />
-          <Skeleton className="h-96 w-full" />
-        </div>
-      </Shell>
+      <div className="container mx-auto py-6">
+        <Skeleton className="h-12 w-1/3 mb-6" />
+        <Skeleton className="h-96 w-full" />
+      </div>
     );
   }
 
   if (!agent) {
     return (
-      <Shell>
-        <div className="container mx-auto py-6">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>
-              Agent not found. Please check the URL and try again.
-            </AlertDescription>
-          </Alert>
-        </div>
-      </Shell>
+      <div className="container mx-auto py-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            Agent not found. Please check the URL and try again.
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
