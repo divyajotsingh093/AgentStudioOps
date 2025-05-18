@@ -186,12 +186,20 @@ export default function TriggersPage() {
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Triggers</h1>
-        <Button asChild>
-          <Link href="/triggers/new">
-            <PlusCircle className="h-4 w-4 mr-2" />
-            New Trigger
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/triggers/drag-drop-config">
+              <Code className="h-4 w-4 mr-2" />
+              Drag & Drop Designer
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/triggers/new">
+              <PlusCircle className="h-4 w-4 mr-2" />
+              New Trigger
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="mb-6">

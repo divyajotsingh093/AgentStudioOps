@@ -54,6 +54,7 @@ function Router() {
         {/* Triggers */}
         <Route path="/triggers" component={lazy(() => import('@/pages/triggers'))} />
         <Route path="/triggers/new" component={lazy(() => import('@/pages/triggers/new'))} />
+        <Route path="/triggers/drag-drop-config" component={lazy(() => import('@/pages/triggers/drag-drop-config'))} />
         <Route path="/triggers/:id" component={lazy(() => import('@/pages/triggers/[id]'))} />
         
         {/* Agent Orchestration */}
