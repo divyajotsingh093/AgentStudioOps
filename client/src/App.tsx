@@ -71,6 +71,9 @@ function Router() {
         {/* Chat */}
         <Route path="/chat" component={lazy(() => import('@/pages/chat'))} />
         
+        {/* Tasks Timeline Board */}
+        <Route path="/tasks" component={lazy(() => import('@/pages/tasks'))} />
+        
         <Route component={NotFound} />
       </Switch>
     </MainLayout>
