@@ -387,7 +387,7 @@ export function TaskTimelineBoard({
   const queuedTasks = filteredTasks.filter(task => task.status === 'Queued');
   const runningTasks = filteredTasks.filter(task => task.status === 'Running');
   const approvalTasks = filteredTasks.filter(task => task.status === 'Needs Approval');
-  const doneTasks = filteredTasks.filter(task => task.status === 'Done');
+  const doneTasks = filteredTasks.filter(task => task.status === 'Done' || task.status === 'Completed');
   const failedTasks = filteredTasks.filter(task => task.status === 'Failed');
   
   const handleTaskClick = (task: any) => {
@@ -401,6 +401,7 @@ export function TaskTimelineBoard({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'Done':
+      case 'Completed':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'Running':
         return <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />;
@@ -418,7 +419,8 @@ export function TaskTimelineBoard({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Done':
-        return <Badge variant="outline" className="bg-green-100 text-green-800">✓ Done</Badge>;
+      case 'Completed':
+        return <Badge variant="outline" className="bg-green-100 text-green-800">✓ Completed</Badge>;
       case 'Running':
         return <Badge variant="outline" className="bg-blue-100 text-blue-800 animate-pulse">⟳ Running</Badge>;
       case 'Queued':
@@ -435,7 +437,7 @@ export function TaskTimelineBoard({
   const TaskCard = ({ task }: { task: any }) => (
     <Card 
       className={`mb-4 w-full border-l-4 ${
-        task.status === 'Done' ? 'border-l-green-500' :
+        task.status === 'Done' || task.status === 'Completed' ? 'border-l-green-500' :
         task.status === 'Running' ? 'border-l-blue-500' :
         task.status === 'Needs Approval' ? 'border-l-yellow-500' :
         task.status === 'Failed' ? 'border-l-red-500' :
@@ -514,7 +516,7 @@ export function TaskTimelineBoard({
                 Approve
               </Button>
             )}
-            {['Failed', 'Done'].includes(selectedTask.status) && onRerunTask && (
+            {['Failed', 'Done', 'Completed'].includes(selectedTask.status) && onRerunTask && (
               <Button variant="outline" onClick={() => onRerunTask(selectedTask.id)}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Re-run
