@@ -318,6 +318,7 @@ export type InsertTriggerEvent = z.infer<typeof insertTriggerEventSchema>;
 export const nodeTypeEnum = z.enum(['Agent', 'Trigger', 'Tool', 'Decision', 'DataTransform', 'Condition', 'Input', 'Output']);
 export const flowStatusEnum = z.enum(['Active', 'Inactive', 'Draft', 'Testing', 'Archived']);
 export const executionStatusEnum = z.enum(['Running', 'Success', 'Failed', 'Pending', 'Canceled']);
+export const taskStatusEnum = z.enum(['Queued', 'Running', 'Needs Approval', 'Done', 'Failed']);
 
 export const flows = pgTable("flows", {
   id: serial("id").primaryKey(),
@@ -373,6 +374,41 @@ export const flowExecutions = pgTable("flow_executions", {
 
 export const nodeExecutions = pgTable("node_executions", {
   id: uuid("id").primaryKey().defaultRandom(),
+
+// Tasks and Actions for Timeline Board
+export const tasks = pgTable("tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  description: text("description"),
+  agentId: text("agent_id").references(() => agents.id),
+  status: text("status").notNull().default('Queued'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  priority: text("priority").default('Medium'),
+  assignedTo: integer("assigned_to").references(() => users.id),
+  metadata: json("metadata").default({}),
+  parentFlowExecutionId: uuid("parent_flow_execution_id").references(() => flowExecutions.id),
+  scheduledFor: timestamp("scheduled_for"),
+  recurringSchedule: text("recurring_schedule"),
+});
+
+export const actions = pgTable("actions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  taskId: uuid("task_id").notNull().references(() => tasks.id),
+  type: text("type").notNull(), // Could be 'LLM', 'Tool', 'DataFetch', etc.
+  name: text("name").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default('Queued'),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  inputData: json("input_data").default({}),
+  outputData: json("output_data").default({}),
+  error: text("error"),
+  latency: integer("latency"),
+  metadata: json("metadata").default({}),
+  sequence: integer("sequence").notNull(),
+});efaultRandom(),
   flowExecutionId: uuid("flow_execution_id").notNull().references(() => flowExecutions.id),
   nodeId: integer("node_id").notNull().references(() => flowNodes.id),
   status: text("status").notNull(),

@@ -1,0 +1,101 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║ 🚀  NEUTRINOS INSURANCE-GRADE AGENT WORKBENCH — DEV PLAYGROUND v2.0 ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+🔭  VISION  
+    Build a Replit-hosted, **local-first** lab that rivals Relevance AI’s
+    Agent-OS & Workforce canvas. We want:  
+      • Live prompt + tool editing (Monaco)  
+      • A **Task-Timeline board** (à la Relevance “Tasks Page”) that shows every
+        execution as an **Action Card** you can click to drill into the trace,
+        status chips (🟢 done | 🟡 in-progress | 🔴 failed), and per-step metadata
+      • Multi-agent DAG canvas, recurring schedules, approvals, version control,
+        metadata capture, and collaboration cursors—just like Relevance AI’s
+        features list :contentReference[oaicite:0]{index=0}.
+
+────────────────────────────────────────────────────────────────────────
+CORE STACK  
+    Python 3.11 + FastAPI / LangGraph  
+    Postgres + pgvector (docker-compose)  
+    React 18 + Vite + Tailwind + Zustand  
+    D3 for DAG + timeline, Monaco Editor, Y.js for multi-cursor  
+    OpenAI GPT-4o-mini (fallback 3.5-turbo)  
+    Server-Sent Events (SSE) for live token stream  
+    Slack SDK (optional)  
+
+────────────────────────────────────────────────────────────────────────
+DIRECTORY LAYOUT  (new 💎 bits in **bold**)  
+
+backend/  
+  ├─ main.py  
+  ├─ agent/  
+  │   ├─ runtime.py        ← LangGraph planner⇄worker loop  
+  │   ├─ tools.py          ← data_fabric, rules, idp, slack, **scheduler**  
+  │   ├─ guardrails.py     ← token & PII caps  
+  │   └─ prompts/  
+  ├─ data_fabric/          ← Postgres models + vector search  
+  ├─ rules/  
+  ├─ trace/  
+  ├─ **tasks/**            ← Task & Action-card API   
+  │   ├─ models.py (Task, Action)  
+  │   └─ api.py  (CRUD + WS)  
+  └─ docker-compose.yaml  
+
+frontend/  
+  ├─ pages/  
+  │   ├─ Chat.jsx          ← streaming + AI action suggestions  
+  │   ├─ Studio.jsx        ← Context / Tools / Prompt / Policies  
+  │   ├─ Orchestration.jsx ← React-Flow DAG (Workforce vibe)  
+  │   ├─ **Tasks.jsx**     ← Kanban-style timeline board (Today · Upcoming · Done)  
+  │   └─ DataFabric.jsx  
+  ├─ components/  
+  │   ├─ PromptEditor.jsx  
+  │   ├─ TraceTimeline.jsx  
+  │   ├─ KPIHeader.jsx  
+  │   ├─ **ActionCard.jsx**      ← status chip, runtime, metadata pills  
+  │   └─ **VersionDiff.jsx**     ← side-by-side agent.json diff (Relevance VC :contentReference[oaicite:1]{index=1})  
+  └─ tailwind.config.js  
+
+docs/ WALKTHROUGH.md — include curl + schedule examples  
+
+────────────────────────────────────────────────────────────────────────
+💡  MUST-HAVE FEATURES (maps → Relevance AI)  
+
+1. **Invent-style Text-to-Agent**: POST `/invent` with plain English → returns
+   scaffolded agent.json :contentReference[oaicite:2]{index=2}.  
+2. **Workforce Canvas**: multi-agent drag-n-drop, join & condition nodes
+   similar to Relevance “Workforce” :contentReference[oaicite:3]{index=3}.  
+3. **Task-Timeline Board**:  
+   • Every run creates a **Task**, each LangGraph step → **Action card**  
+   • Columns: “Queued · Running · Needs Approval · Done · Failed”  
+   • Double-click card → Trace drawer + Metadata panel (key: value)  
+   • Bulk filters & search (status, date, agent) :contentReference[oaicite:4]{index=4}.  
+4. **Metadata Capture**: runtime extracts key fields from each Action and stores
+   in `tasks.metadata` for later filtering :contentReference[oaicite:5]{index=5}.  
+5. **Scheduling**: CRON & recurring (daily / weekly) like Relevance Schedule
+   UI :contentReference[oaicite:6]{index=6}.  
+6. **Approvals**: if guardrail triggers or payout >$2k, Task enters
+   “Needs Approval”; Approver clicks ✅ → resumes run (mirrors Relevance) :contentReference[oaicite:7]{index=7}.  
+7. **Version Control Branches**: save agent.json to `branches/`; diff viewer.  
+8. **Collaboration Cursors**: Y.js in PromptEditor shows other devs’ cursors
+   (aligns with Relevance “Collaboration & Sharing”) :contentReference[oaicite:8]{index=8}.  
+9. **2 000+ Integrations Placeholder**: import any n8n generic webhook node; UI
+   lists “2k integrations” like Relevance promo :contentReference[oaicite:9]{index=9}.  
+10. **Agent-OS KPI Header**: live Success %, p95 latency, cost—mirroring
+    Relevance “AgentOS visibility” :contentReference[oaicite:10]{index=10}.  
+
+────────────────────────────────────────────────────────────────────────
+⛑  GUARDRAILS & POLICY  
+
+• Mask SSN regex `\b\d{3}-\d{2}-\d{4}\b` and ICD-10 codes.  
+• Max 2 000 tokens / call, 5 tool calls / run.  
+• Slack notifications allowed only if `SLACK_BOT_TOKEN` present.  
+• All data_fabric queries checked for role via JWT; unauthorized → 403.  
+
+────────────────────────────────────────────────────────────────────────
+🛠️  SAMPLE API CONTRACTS  
+
+POST /chat  
+```json
+{ "agent_id": "accel-uw", "message": "Underwrite policy 123" }
+→ { "task_id": "tsk_abc", "stream": "/stream/tsk_abc" }   # SSE tokens 
