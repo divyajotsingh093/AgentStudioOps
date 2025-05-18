@@ -771,6 +771,7 @@ export function TaskTimelineBoard({
               <SelectItem value="Running">Running</SelectItem>
               <SelectItem value="Needs Approval">Needs Approval</SelectItem>
               <SelectItem value="Done">Done</SelectItem>
+              <SelectItem value="Completed">Completed</SelectItem>
               <SelectItem value="Failed">Failed</SelectItem>
             </SelectContent>
           </Select>
